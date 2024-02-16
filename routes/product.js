@@ -28,7 +28,7 @@ const getListData = async (req) => {
   let keyword_ = db.escape(`%${keyword}%`);
 
   let qs = {}; // 用來把 query string 的設定傳給 template
-  // 起始的日期
+  // 價錢區間
   let startDate = req.query.startDate ? req.query.startDate.trim() : "";
   const startDateD = dayjs(startDate);
   if (startDateD.isValid()) {
