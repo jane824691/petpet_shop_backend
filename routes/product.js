@@ -102,20 +102,6 @@ const getListData = async (req) => {
   return output;
 };
 
-router.get("/", async (req, res) => {
-  res.locals.pageName = "ab-list";
-  res.locals.title = "列表 | " + res.locals.title;
-  const output = await getListData(req);
-  if (output.redirect) {
-    return res.redirect(output.redirect);
-  }
-
-  if (!req.session.admin) {
-    res.render("product/list", output);
-  } else {
-    res.render("pid/list", output);
-  }
-});
 
 router.get("/api", async (req, res) => {
   res.json(await getListData(req));
