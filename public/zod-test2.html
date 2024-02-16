@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script type="module">
+    import { z } from "https://cdn.jsdelivr.net/npm/zod@3.22.4/+esm";
+
+    const schema2 = z.object({  
+      email: z.string().email({message: "email格式錯誤"}),
+      password: z.string().min(6),
+    });
+
+    const data2 = {
+        email: "shin@test.com",
+        password: "1234dfgdf",
+      };
+    let result2 = schema2.safeParse(data2);
+      console.log(JSON.stringify(result2, null, 4));
+        
+    const data3 = {
+        email: "shin@test",
+        password: "1234dfgdf",
+      };
+
+    let result3 = schema2.safeParse(data3);
+    console.log(JSON.stringify(result3, null, 4)); //JSON.stringify(value,replacer,space)
+        
+  </script>
+</body>
+</html>

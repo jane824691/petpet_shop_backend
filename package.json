@@ -1,0 +1,53 @@
+{
+  "name": "mfee43-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "type-desc": "setting ESM module",
+  "scripts": {
+    "dev": "SET ppp=123 && nodemon index.js",
+    "production": "pm2 start index.js",
+    "start": "echo 123",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "app-root-path": "^3.1.0",
+    "bcryptjs": "^2.4.3",
+    "bootstrap": "^5.3.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.10",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-mysql-session": "^3.0.0",
+    "express-session": "^1.17.3",
+    "jquery": "^3.7.1",
+    "jsonwebtoken": "^9.0.2",
+    "lru-cache": "^10.1.0",
+    "moment-timezone": "^0.5.43",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.3",
+    "pug": "^3.0.2",
+    "sequelize": "^6.35.2",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "imports": {
+    "##/*": "./*",
+    "#configs/*": "./configs/*",
+    "#data/*": "./data/*",
+    "#db-helpers/*": "./db-helpers/*",
+    "#middlewares/*": "./middlewares/*",
+    "#services/*": "./services/*",
+    "#utils/*": "./utils/*"
+  }
+}

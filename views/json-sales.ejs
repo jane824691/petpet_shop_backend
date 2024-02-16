@@ -1,0 +1,50 @@
+<%- include('parts/html-head') %>
+<!-- ejs的include function,要用-號,現在是ejs要引入其他的ejs,這時候要用相對路徑 -->
+<%- include('parts/navbar') %>
+
+
+
+<div class="container">
+
+
+
+    <div class="row">
+        <div class="col-6">
+
+
+            <table class="table table-bordered table-striped">
+                <thead>
+                  <tr>
+                    <th scope="col">編號</th>
+                    <th scope="col">姓名</th>
+                    <th scope="col">年齡</th>
+                  </tr>
+                </thead>
+                <tbody>
+
+
+
+                    <% for(i of salesk){ %>
+                  <tr>
+<td><%= i.id%></td>
+<td><%= i.name%></td>
+<td><%= i.age%></td>
+
+                  </tr>
+                  <% }%>
+
+                </tbody>
+              </table>
+
+
+
+
+        </div>
+    </div>
+
+</div>
+
+
+<%- include('parts/scripts') %>
+
+<%- include('parts/html-foot') %>

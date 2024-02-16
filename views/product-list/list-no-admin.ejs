@@ -1,0 +1,99 @@
+<%- include('../parts/html-head') %> <%- include('../parts/navbar') %>
+<!-- <%- JSON.stringify(locals, null, 4) %> -->
+
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <nav aria-label="Page navigation example">
+        <ul class="pagination">
+          <li class="page-item <%= page===1 ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=1">
+              <i class="fa-solid fa-angles-left"></i>
+            </a>
+          </li>
+          <li class="page-item <%= page===1 ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=<%= page -1 %>">
+              <i class="fa-solid fa-angle-left"></i>
+            </a>
+          </li>
+          <% for(let i=page-5; i<=page+5; i++) if(i>=1 && i<=totalPages) { %>
+          <li class="page-item <%= i===page ? 'active' : '' %>">
+            <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+          </li>
+          <% } %>
+          <li class="page-item <%= page===totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=<%= page +1 %>">
+              <i class="fa-solid fa-angle-right"></i>
+            </a>
+          </li>
+          <li class="page-item <%= page===totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=<%= totalPages %>">
+              <i class="fa-solid fa-angles-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+
+            <th>商品編號</th>
+            <th>商品名</th>
+            <th>價錢</th>
+            <th>商品敘述</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          <% for(let i of rows) { %>
+          <tr>
+            <td><%= i.product_id %></td>
+            <td><%= i.category_id %></td>
+            <td><%= i.product_name %></td>
+            <td><%= i.product_price %></td>
+            <td><%= i.stock %></td>
+            <td><%= i.sales_condition %></td>
+
+            <td><%= product_description %></td>
+            <td><%= i.product_price %></td>
+            <td><%= i.product_price %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<%- include('../parts/scripts') %>
+<script>
+  const removeItem = (e) => {
+    e.preventDefault();
+    const product_id = e.currentTarget.getAttribute("data-product_id");
+
+    // TODO: 詢問用戶是否確定要刪除
+
+    fetch(`/product-list/${product_id}`, {
+      method: "DELETE",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        console.log(data);
+        if (data.success) {
+          location.reload();
+        }
+      })
+      .catch((ex) => console.log(ex));
+  };
+
+  const myModal = new bootstrap.Modal("#exampleModal", {
+    keyboard: false,
+  });
+</script>
+<%- include('../parts/html-foot') %>

@@ -1,0 +1,20 @@
+<!-- 這是一個樣板引擎的例子 -->
+
+
+<%- include('parts/html-head') %>
+<!-- ejs的include function,要用-號,現在是ejs要引入其他的ejs,這時候要用相對路徑 -->
+<%- include('parts/navbar') %>
+
+
+
+<div class="container">
+<h2><%= name %></h2>
+<h2><%= jj %></h2>
+
+
+</div>
+
+
+<%- include('parts/scripts') %>
+
+<%- include('parts/html-foot') %>

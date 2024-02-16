@@ -1,0 +1,60 @@
+<%- include('parts/html-head') %> <%- include('parts/navbar') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">登入</h5>
+          <form name="form1" onsubmit="sendForm(event)">
+            <div class="mb-3">
+              <label for="email" class="form-label">email</label>
+              <input type="text" class="form-control" id="email" name="email" />
+              <div class="form-text"></div>
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">password</label>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+              />
+              <div class="form-text"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">登入</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('parts/scripts') %>
+<script>
+  function sendForm(e) {
+    e.preventDefault();
+    // TODO: 資料檢查
+
+    const fd = new FormData(document.form1);
+    const dataObj = Object.fromEntries(fd);
+
+    fetch(``, {
+      method: "POST",
+      body: JSON.stringify(dataObj),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        console.log(data);
+        if(data.success){
+          location.href = '/';
+        }
+      })
+      .catch((ex) => console.log(ex));
+  }
+</script>
+<%- include('parts/html-foot') %>
