@@ -18,49 +18,45 @@ router.use((req, res, next) => {
   next();
 });
 
+// 總頁面的所有資訊
 const getListData = async (req) => {
   const perPage = 12; // 每頁幾筆
   let page = +req.query.page || 1; // 用戶決定要看第幾頁
-  let keyword =
-    req.query.keyword && typeof req.query.keyword === "string"
-      ? req.query.keyword.trim()
+  let searchWord =
+    req.query.searchWord && typeof req.query.searchWord === "string"
+      ? req.query.searchWord.trim()
       : "";
-  let keyword_ = db.escape(`%${keyword}%`);
+  let searchWord_ = db.escape(`%${searchWord}%`);
 
   let qs = {}; // 用來把 query string 的設定傳給 template
-  // 價錢區間
-  let startDate = req.query.startDate ? req.query.startDate.trim() : "";
-  const startDateD = dayjs(startDate);
-  if (startDateD.isValid()) {
-    startDate = startDateD.format("YYYY-MM-DD");
-  } else {
-    startDate = "";
-  }
+  let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
+  let priceLow = req.query.priceLow ? req.query.priceLow.trim() : ""; // 價錢區間低
+  let priceCheap = req.query.priceCheap ? req.query.priceCheap.trim() : ""; //價錢排序從便宜
+  let priceExpensive = req.query.priceExpensive ? req.query.priceExpensive.trim() : ""; //價錢排序從貴
 
-  // 結束的日期
-  let endDate = req.query.endDate ? req.query.endDate.trim() : "";
-  const endDateD = dayjs(endDate);
-  if (endDateD.isValid()) {
-    endDate = endDateD.format("YYYY-MM-DD");
-  } else {
-    endDate = "";
-  }
 
   // 查關鍵字對應api
   let where = ` WHERE 1 `;
-  if (keyword) {
-    qs.keyword = keyword;
-    where += ` AND ( \`name\` LIKE ${keyword_} OR \`mobile\` LIKE ${keyword_} ) `;
+  if (searchWord) {
+    qs.searchWord = searchWord;
+    where += ` AND ( \`product_name\` LIKE ${searchWord_} OR \`product_description\` LIKE ${searchWord_} ) `;
   }
-  if (startDate) {
-    qs.startDate = startDate;
-    where += ` AND birthday >= '${startDate}' `;
+  if (priceLow) {
+    qs.priceLow = priceLow;
+    where += ` AND product_price >= '${priceLow}' `;
   }
-  if (endDate) {
-    qs.endDate = endDate;
-    where += ` AND birthday <= '${endDate}' `;
+  if (priceHigh) {
+    qs.priceHigh = priceHigh;
+    where += ` AND product_price <= '${priceHigh}' `;
   }
-
+  if (priceCheap) {
+    qs.priceCheap = priceCheap;
+    where += ` AND product_price >= '${priceCheap}' `;
+  }
+  if (priceExpensive) {
+    qs.priceExpensive = priceExpensive;
+    where += ` AND product_price <= '${priceExpensive}' `;
+  }
   let totalRows = 0;
   let totalPages = 0;
   let rows = [];
@@ -113,6 +109,95 @@ router.get("/api", async (req, res) => {
   }
   */
 });
+
+
+// 依照價格低到高-排序
+const getListData_orderByCheap = async (req) => {
+  const perPage = 12; // 每頁幾筆
+  let page = +req.query.page || 1; // 用戶決定要看第幾頁
+  let searchWord =
+    req.query.searchWord && typeof req.query.searchWord === "string"
+      ? req.query.searchWord.trim()
+      : "";
+  let searchWord_ = db.escape(`%${searchWord}%`);
+
+  let qs = {}; // 用來把 query string 的設定傳給 template
+  // 價錢區間高
+  let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : "";
+
+  // 價錢區間低
+  let priceLow = req.query.priceLow ? req.query.priceLow.trim() : "";
+
+
+  // 查關鍵字對應api
+  let where = ` WHERE 1 `;
+  if (searchWord) {
+    qs.searchWord = searchWord;
+    where += ` AND ( \`product_name\` LIKE ${searchWord_} OR \`product_description\` LIKE ${searchWord_} ) `;
+  }
+  if (priceLow) {
+    qs.priceLow = priceLow;
+    where += ` AND product_price >= '${priceLow}' `;
+  }
+  if (priceHigh) {
+    qs.priceHigh = priceHigh;
+    where += ` AND product_price <= '${priceHigh}' `;
+  }
+
+  let totalRows = 0;
+  let totalPages = 0;
+  let rows = [];
+
+  let output = {
+    success: false,
+    page,
+    perPage,
+    rows,
+    totalRows,
+    totalPages,
+    qs,
+    redirect: "",
+    info: "",
+  };
+
+  if (page < 1) {
+    output.redirect = `?page=1`;
+    output.info = `頁碼值小於 1`;
+    return output;
+  }
+
+  const t_sql = `SELECT COUNT(1) totalRows FROM product ${where}`;
+  [[{ totalRows }]] = await db.query(t_sql);
+  totalPages = Math.ceil(totalRows / perPage);
+  if (totalRows > 0) {
+    if (page > totalPages) {
+      output.redirect = `?page=${totalPages}`;
+      output.info = `頁碼值大於總頁數`;
+      return { ...output, totalRows, totalPages };
+    }
+
+    const sql = `SELECT * FROM product ${where} ORDER BY product_price ASC 
+    LIMIT ${(page - 1) * perPage}, ${perPage}`;
+    [rows] = await db.query(sql);
+    output = { ...output, success: true, rows, totalRows, totalPages };
+  }
+
+  return output;
+};
+
+router.get("/", async (req, res)=>{
+  res.locals.pageName="ab-list";
+    const output = await getListData_orderByCheap(req);
+  if(output.redirect){
+      return res.redirect(output.redirect);
+  }
+  res.render("forum-address/list", output);
+});
+
+router.get("/api_orderByCheap", async(req, res)=>{
+  res.json(await getListData_orderByCheap(req));
+});
+
 
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
