@@ -31,8 +31,9 @@ const getListData = async (req) => {
   let qs = {}; // 用來把 query string 的設定傳給 template
   let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
   let priceLow = req.query.priceLow ? req.query.priceLow.trim() : ""; // 價錢區間低
-  let priceCheap = req.query.priceCheap ? req.query.priceCheap.trim() : ""; //價錢排序從便宜
-  let priceExpensive = req.query.priceExpensive ? req.query.priceExpensive.trim() : ""; //價錢排序從貴
+  // let priceCheap = req.query.priceCheap ? req.query.priceCheap.trim() : ""; //價錢排序從便宜
+  // let priceExpensive = req.query.priceExpensive ? req.query.priceExpensive.trim() : ""; //價錢排序從貴
+  let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; //價格排序方式
 
 
   // 查關鍵字對應api
@@ -49,14 +50,24 @@ const getListData = async (req) => {
     qs.priceHigh = priceHigh;
     where += ` AND product_price <= '${priceHigh}' `;
   }
-  if (priceCheap) {
-    qs.priceCheap = priceCheap;
-    where += ` AND product_price >= '${priceCheap}' `;
+  // if (priceCheap) {
+  //   qs.priceCheap = priceCheap;
+  //   where += ` AND product_price >= '${priceCheap}' `;
+  // }
+  // if (priceExpensive) {
+  //   qs.priceExpensive = priceExpensive;
+  //   where += ` AND product_price <= '${priceExpensive}' `;
+  // }
+
+
+  // 構建價格排序子句
+  let sortByClause = "";
+  if (sortBy === "cheap") {
+    sortByClause = "ORDER BY product_price ASC";
+  } else if (sortBy === "expensive") {
+    sortByClause = "ORDER BY product_price DESC";
   }
-  if (priceExpensive) {
-    qs.priceExpensive = priceExpensive;
-    where += ` AND product_price <= '${priceExpensive}' `;
-  }
+
   let totalRows = 0;
   let totalPages = 0;
   let rows = [];
@@ -89,7 +100,10 @@ const getListData = async (req) => {
       return { ...output, totalRows, totalPages };
     }
 
-    const sql = `SELECT * FROM product ${where} ORDER BY pid DESC 
+    // 根據是否有價格排序來決定 SQL 查詢中的排序方式
+    let priceSortClause = sortByClause ? sortByClause : "ORDER BY pid DESC";
+
+    const sql = `SELECT * FROM product ${where} ${priceSortClause} 
     LIMIT ${(page - 1) * perPage}, ${perPage}`;
     [rows] = await db.query(sql);
     output = { ...output, success: true, rows, totalRows, totalPages };
@@ -108,94 +122,6 @@ router.get("/api", async (req, res) => {
     return res.json({success: false, error: "沒有授權, 不能取得資料"});
   }
   */
-});
-
-
-// 依照價格低到高-排序
-const getListData_orderByCheap = async (req) => {
-  const perPage = 12; // 每頁幾筆
-  let page = +req.query.page || 1; // 用戶決定要看第幾頁
-  let searchWord =
-    req.query.searchWord && typeof req.query.searchWord === "string"
-      ? req.query.searchWord.trim()
-      : "";
-  let searchWord_ = db.escape(`%${searchWord}%`);
-
-  let qs = {}; // 用來把 query string 的設定傳給 template
-  // 價錢區間高
-  let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : "";
-
-  // 價錢區間低
-  let priceLow = req.query.priceLow ? req.query.priceLow.trim() : "";
-
-
-  // 查關鍵字對應api
-  let where = ` WHERE 1 `;
-  if (searchWord) {
-    qs.searchWord = searchWord;
-    where += ` AND ( \`product_name\` LIKE ${searchWord_} OR \`product_description\` LIKE ${searchWord_} ) `;
-  }
-  if (priceLow) {
-    qs.priceLow = priceLow;
-    where += ` AND product_price >= '${priceLow}' `;
-  }
-  if (priceHigh) {
-    qs.priceHigh = priceHigh;
-    where += ` AND product_price <= '${priceHigh}' `;
-  }
-
-  let totalRows = 0;
-  let totalPages = 0;
-  let rows = [];
-
-  let output = {
-    success: false,
-    page,
-    perPage,
-    rows,
-    totalRows,
-    totalPages,
-    qs,
-    redirect: "",
-    info: "",
-  };
-
-  if (page < 1) {
-    output.redirect = `?page=1`;
-    output.info = `頁碼值小於 1`;
-    return output;
-  }
-
-  const t_sql = `SELECT COUNT(1) totalRows FROM product ${where}`;
-  [[{ totalRows }]] = await db.query(t_sql);
-  totalPages = Math.ceil(totalRows / perPage);
-  if (totalRows > 0) {
-    if (page > totalPages) {
-      output.redirect = `?page=${totalPages}`;
-      output.info = `頁碼值大於總頁數`;
-      return { ...output, totalRows, totalPages };
-    }
-
-    const sql = `SELECT * FROM product ${where} ORDER BY product_price ASC 
-    LIMIT ${(page - 1) * perPage}, ${perPage}`;
-    [rows] = await db.query(sql);
-    output = { ...output, success: true, rows, totalRows, totalPages };
-  }
-
-  return output;
-};
-
-router.get("/", async (req, res)=>{
-  res.locals.pageName="ab-list";
-    const output = await getListData_orderByCheap(req);
-  if(output.redirect){
-      return res.redirect(output.redirect);
-  }
-  res.render("forum-address/list", output);
-});
-
-router.get("/api_orderByCheap", async(req, res)=>{
-  res.json(await getListData_orderByCheap(req));
 });
 
 
