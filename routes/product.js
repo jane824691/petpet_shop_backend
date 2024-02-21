@@ -31,17 +31,16 @@ const getListData = async (req) => {
   let qs = {}; // 用來把 query string 的設定傳給 template
   let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
   let priceLow = req.query.priceLow ? req.query.priceLow.trim() : ""; // 價錢區間低
-  // let priceCheap = req.query.priceCheap ? req.query.priceCheap.trim() : ""; //價錢排序從便宜
-  // let priceExpensive = req.query.priceExpensive ? req.query.priceExpensive.trim() : ""; //價錢排序從貴
-  let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; //價格排序方式
-
+  let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; // 價格排序方式
+  let tag = req.query.tag ? req.query.tag.trim() : ""; // 價格排序方式
 
   // 查關鍵字對應api
   let where = ` WHERE 1 `;
   if (searchWord) {
     qs.searchWord = searchWord;
-    where += ` AND ( \`product_name\` LIKE ${searchWord_} OR \`product_description\` LIKE ${searchWord_} ) `;
+    where += ` AND ( \`product_name\` LIKE ${searchWord_} )`;
   }
+  // 查價格區間
   if (priceLow) {
     qs.priceLow = priceLow;
     where += ` AND product_price >= '${priceLow}' `;
@@ -50,15 +49,14 @@ const getListData = async (req) => {
     qs.priceHigh = priceHigh;
     where += ` AND product_price <= '${priceHigh}' `;
   }
-  // if (priceCheap) {
-  //   qs.priceCheap = priceCheap;
-  //   where += ` AND product_price >= '${priceCheap}' `;
-  // }
-  // if (priceExpensive) {
-  //   qs.priceExpensive = priceExpensive;
-  //   where += ` AND product_price <= '${priceExpensive}' `;
-  // }
-
+  // 查tag對應
+  if (tag) {
+    qs.tag = tag;
+    // 將複數的 tag 轉換為陣列
+    const tagArray = tag.split(",").map((item) => parseInt(item.trim()));
+    // 使用 IN 運算符檢查 category_id 是否在 tagArray 中
+    where += ` AND \`category_id\` IN (${tagArray.join(",")})`;
+  }
 
   // 構建價格排序子句
   let sortByClause = "";
@@ -112,7 +110,6 @@ const getListData = async (req) => {
   return output;
 };
 
-
 router.get("/api", async (req, res) => {
   res.json(await getListData(req));
   /*
@@ -123,7 +120,6 @@ router.get("/api", async (req, res) => {
   }
   */
 });
-
 
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
