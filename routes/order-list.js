@@ -42,7 +42,7 @@ const getListData = async (req) => {
     endDate = "";
   }
 
-  let where = ` WHERE sid = 1 `;
+  let where = ` WHERE sid=${sid} `;
   if (keyword) {
     qs.keyword = keyword;
     where += ` AND ( \`name\` LIKE ${keyword_} OR \`phone\` LIKE ${keyword_} ) `;
@@ -108,6 +108,42 @@ router.get("/api", async (req, res) => {
   }
   */
 });
+
+
+router.get("/person/:sid", async (req, res) => {
+  try {
+    let sid = req.params.sid || 1; // 使用 req.params.sid 來獲取路徑參數
+    const [rows, fields] = await db.query(
+      `SELECT * FROM order_list WHERE sid=${sid} ORDER BY oid DESC`
+    );
+
+    let output = {
+      success: true,
+      page: 1, 
+      perPage: 6,
+      rows: rows,
+      totalRows: rows.length,
+      totalPages: 1,
+      qs: {},
+      redirect: "",
+      info: ""
+    };
+
+    res.json(output);
+  } catch (ex) {
+    // 如有異常則跳出以下提示
+    const output = {
+      success: false,
+      exception: {
+        message: ex.message,
+        stack: ex.stack,
+      },
+    };
+    // 提示錯誤信息
+    res.status(500).json(output);
+  }
+});
+
 
 
 router.post("/add", upload.none(), async (req, res) => {
