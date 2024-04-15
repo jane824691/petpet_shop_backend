@@ -147,6 +147,8 @@ router.get("/person/:sid", async (req, res) => {
 
 
 router.post("/add", upload.none(), async (req, res) => {
+  const sid = req.params.sid
+
   const output = {
     success: false,
     postData: req.body,
@@ -165,10 +167,11 @@ router.post("/add", upload.none(), async (req, res) => {
 
   try {
     const sql1 =
-    "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, 1, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
+    "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
   
     const [result1] = await db.query(sql1, [
       name,
+      sid,
       phone,
       email,
       netTotal,
