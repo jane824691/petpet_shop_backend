@@ -146,9 +146,7 @@ router.get("/person/:sid", async (req, res) => {
 
 
 
-router.post("/add", upload.none(), async (req, res) => {
-  const sid = req.params.sid
-
+router.post("/add", upload.none(), async (req, res) => { 
   const output = {
     success: false,
     postData: req.body,
@@ -157,6 +155,7 @@ router.post("/add", upload.none(), async (req, res) => {
   // 準備存進第一張order_list, name是前端定義接收的名字
   const {
     name,
+    sid,
     phone,
     email,
     netTotal,
