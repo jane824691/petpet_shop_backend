@@ -162,19 +162,6 @@ const getListData = async (req) => {
     const [couponResult] = await db.query(sql, values);
     output.couponResult = couponResult;
 
-    // // Get the inserted coupon_id
-    // const couponId = couponResult.insertId;
-
-    // // Insert into coupon_use table
-    // const couponUseSql = `
-    //   INSERT INTO \`coupon_use\` (\`coupon_id\`, \`sid\`, \`coupon_status\`, \`created_at3\`)
-    //   VALUES (?, ?, ?, NOW());
-    // `;
-    // const sid = 1;
-    // const couponUseValues = [couponId, sid, coupon_status];
-
-    // const [couponUseResult] = await db.query(sql, values);
-    // output.couponUseResult = couponUseResult;
 
     output.success = !!couponResult.affectedRows ;
   } catch (ex) {
@@ -184,7 +171,7 @@ const getListData = async (req) => {
   res.json(output);
 });
   
-
+//含上傳圖片
 router.post("/coupon-use/add", upload.none(), async (req, res) => {
   console.log('Received request with data:', req.body);
 
