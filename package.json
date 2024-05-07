@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "SET ppp=123 && nodemon index.js",
     "production": "pm2 start index.js",
-    "start": "echo 123",
+    "start": "npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
