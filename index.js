@@ -67,6 +67,11 @@ app.use(
   })
 );
 
+// 定義路由處理器
+app.head('/', (req, res) => {
+  res.status(200).send('Hello from HEAD /');
+});
+
 // 自訂頂層 middleware
 
 app.use((req, res, next) => {
