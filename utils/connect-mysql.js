@@ -2,8 +2,7 @@ import mysql from "mysql2/promise";
 
 const {DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT} =process.env;
 console.log({DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT});
-// const db =await mysql.createPool({ //node的await不用async的樣子11/16,10:17
-const db =await createPool({
+const db =await mysql.createPool({ //node的await不用async的樣子11/16,10:17
 host: DB_HOST,
 user: DB_USER,
 password: DB_PASS,
