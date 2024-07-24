@@ -343,7 +343,7 @@ app.use((req, res) => {
   res.status(404).send(`<h1>你迷路了嗎</h1>`);
 });
 
-const port = process.env.port || 3001;
+const port = process.env.port || 30553;
 
 app.listen(port, () => {
   console.log(`express server: ${port}`);
