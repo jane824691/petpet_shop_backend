@@ -74,7 +74,6 @@ tinify.key = process.env.TINYPNG_API_KEY;
             fileName: blob.name
         });
     });
-    blobStream.end(req.file.buffer);
 
     // 將檔案寫入
     blobStream.end(file.buffer);
@@ -197,7 +196,12 @@ tinify.key = process.env.TINYPNG_API_KEY;
               output.imgUrl = fileUrl; // 返回上傳的圖片 URL
               output.photo = blob.name; // 返回 Firebase 上的檔名
   
-              res.json(output);
+              // res.json(output);
+              // 返回成功信息
+              return res.status(200).json({
+                ...output,
+                imgUrl: fileUrl,
+              });
             }
 
         });
