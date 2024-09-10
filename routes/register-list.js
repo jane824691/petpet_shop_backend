@@ -162,48 +162,50 @@ tinify.key = process.env.TINYPNG_API_KEY;
                 expires: '03-09-2491'
             });
 
-            //bcrypt 加密密碼
-            const hash = await bcrypt.hash(req.body.password, 8);
-
-            // 插入資料到 MySQL
-            const {lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, photo, township, country} = req.body;
-
-            const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-
-            // 執行資料庫插入操作
             try {
-              const [result] = await db.query(sql, [
-                lastname, 
-                firstname, 
-                email, 
-                mobile, 
-                birthday,
-                account,
-                hash, 
-                identification,
-                country,
-                township,
-                zipcode,
-                address,
-                photo  // 確保你在這裡傳遞正確的 fileName 給資料庫
-              ]);
-            } catch (ex) {
-              console.error(ex); // 捕捉錯誤，進一步查看細節
-              res.status(500).json({ error: ex.message });
-              // 檢查是否成功插入資料
-              output.result = result;
-              output.success = !!result.affectedRows;
-              output.imgUrl = fileUrl; // 返回上傳的圖片 URL
-              output.photo = blob.name; // 返回 Firebase 上的檔名
-  
-              // res.json(output);
-              // 返回成功信息
-              return res.status(200).json({
-                ...output,
-                imgUrl: fileUrl,
-              });
-            }
+                // bcrypt 加密密碼
+                const hash = await bcrypt.hash(req.body.password, 8);
 
+                // 插入資料到 MySQL
+                const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country } = req.body;
+
+                const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+                // 執行資料庫插入操作，將 photo 欄位存入 blob.name (Firebase 檔名)
+                const [result] = await db.query(sql, [
+                    lastname, 
+                    firstname, 
+                    email, 
+                    mobile, 
+                    birthday,
+                    account,
+                    hash, 
+                    identification,
+                    country,
+                    township,
+                    zipcode,
+                    address,
+                    blob.name // 將 photo 欄位設為 Firebase 上的檔名
+                ]);
+
+                // 檢查是否成功插入資料
+                if (result.affectedRows > 0) {
+                    output.success = true;
+                    output.result = result;
+                    output.photo = blob.name; // Firebase 檔名
+                } else {
+                    throw new Error('Failed to insert data into MySQL.');
+                }
+
+                // 返回成功信息
+                return res.status(200).json(output);
+            } catch (ex) {
+                console.error(ex); // 捕捉錯誤，進一步查看細節
+                return res.status(500).json({
+                    success: false,
+                    error: ex.message,
+                });
+            }
         });
 
         // 將檔案資料寫入 Firebase Storage
@@ -221,9 +223,8 @@ tinify.key = process.env.TINYPNG_API_KEY;
 
 export default router;
 
-
   //可以解析multipart/form-data
-  // router.post("/add", upload.single('photo'), async (req, res) => {
+  // router.post("/add",upload.single('photo'), async (req, res) => {
   //   const output = {
   //     success: false,
   //     postData: req.body, // 除錯用
