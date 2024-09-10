@@ -169,7 +169,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
                 // 插入資料到 MySQL
                 const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country } = req.body;
 
-                const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
+                const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
                 // 執行資料庫插入操作，將 photo 欄位存入 blob.name (Firebase 檔名)
                 const [result] = await db.query(sql, [
