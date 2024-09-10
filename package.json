@@ -28,6 +28,7 @@
     "express": "^4.18.2",
     "express-mysql-session": "^3.0.0",
     "express-session": "^1.17.3",
+    "firebase-admin": "^12.4.0",
     "jquery": "^3.7.1",
     "jsonwebtoken": "^9.0.2",
     "lru-cache": "^10.1.0",
@@ -37,6 +38,7 @@
     "mysql2": "^3.6.3",
     "pug": "^3.0.2",
     "sequelize": "^6.35.2",
+    "tinify": "^1.7.1",
     "uuid": "^9.0.1",
     "webpack": "^5.91.0",
     "zod": "^3.22.4"

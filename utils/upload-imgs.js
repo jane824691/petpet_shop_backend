@@ -12,16 +12,17 @@ const fileFilter = (req, file, cb) => {
   cb(null, !!extMap[file.mimetype]);
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/img");
-  },
-  filename: (req, file, cb) => {
-    const main = uuidv4();
-    const ext = extMap[file.mimetype]; //副檔名
-    cb(null, main + ext);
-  },
+const storage = multer.memoryStorage();
 
-});
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "public/img");
+//   },
+//   filename: (req, file, cb) => {
+//     const main = uuidv4();
+//     const ext = extMap[file.mimetype]; //副檔名
+//     cb(null, main + ext);
+//   },
+// });
 
 export default multer({ fileFilter, storage });
