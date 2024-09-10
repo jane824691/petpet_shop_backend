@@ -125,147 +125,147 @@ tinify.key = process.env.TINYPNG_API_KEY;
   }
   });
   
-  router.post("/add", upload.single('photo'), async (req, res) => {
-    const output = {
-        success: false,
-        postData: req.body, // 除錯用
-    };
+//   router.post("/add", upload.single('photo'), async (req, res) => {
+//     const output = {
+//         success: false,
+//         postData: req.body, // 除錯用
+//     };
 
-    try {
-        // 檢查是否有檔案上傳
-        if (!req.file) {
-            return res.status(400).send('No file uploaded.');
-        }
+//     try {
+//         // 檢查是否有檔案上傳
+//         if (!req.file) {
+//             return res.status(400).send('No file uploaded.');
+//         }
 
-        // 取得上傳的檔案資訊
-        const file = req.file;
+//         // 取得上傳的檔案資訊
+//         const file = req.file;
 
-        // 使用 uuid 重新命名檔案並建立對應的 Firebase blob
-        const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
+//         // 使用 uuid 重新命名檔案並建立對應的 Firebase blob
+//         const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
         
-        // 建立 Firebase 上傳流
-        const blobStream = blob.createWriteStream({
-            metadata: {
-                contentType: file.mimetype, // 設置檔案類型
-            }
-        });
+//         // 建立 Firebase 上傳流
+//         const blobStream = blob.createWriteStream({
+//             metadata: {
+//                 contentType: file.mimetype, // 設置檔案類型
+//             }
+//         });
 
-        // 上傳檔案到 Firebase Storage
-        blobStream.on('error', (err) => {
-            console.error(err);
-            return res.status(500).send('Unable to upload image.');
-        });
+//         // 上傳檔案到 Firebase Storage
+//         blobStream.on('error', (err) => {
+//             console.error(err);
+//             return res.status(500).send('Unable to upload image.');
+//         });
 
-        blobStream.on('finish', async () => {
-            // 確保上傳完成後返回成功訊息
-            const [fileUrl] = await blob.getSignedUrl({
-                action: 'read',
-                expires: '03-09-2491'
-            });
+//         blobStream.on('finish', async () => {
+//             // 確保上傳完成後返回成功訊息
+//             const [fileUrl] = await blob.getSignedUrl({
+//                 action: 'read',
+//                 expires: '03-09-2491'
+//             });
 
-            //bcrypt 加密密碼
-            const hash = await bcrypt.hash(req.body.password, 8);
+//             //bcrypt 加密密碼
+//             const hash = await bcrypt.hash(req.body.password, 8);
 
-            // 插入資料到 MySQL
-            const {lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, photo, township, country} = req.body;
+//             // 插入資料到 MySQL
+//             const {lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, photo, township, country} = req.body;
 
-            const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+//             const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-            // 執行資料庫插入操作
-            try {
-              const [result] = await db.query(sql, [
-                lastname, 
-                firstname, 
-                email, 
-                mobile, 
-                birthday,
-                account,
-                hash, 
-                identification,
-                country,
-                township,
-                zipcode,
-                address,
-                photo  // 確保你在這裡傳遞正確的 fileName 給資料庫
-              ]);
-            } catch (ex) {
-              console.error(ex); // 捕捉錯誤，進一步查看細節
-              res.status(500).json({ error: ex.message });
-              // 檢查是否成功插入資料
-              output.result = result;
-              output.success = !!result.affectedRows;
-              output.imgUrl = fileUrl; // 返回上傳的圖片 URL
-              output.photo = blob.name; // 返回 Firebase 上的檔名
+//             // 執行資料庫插入操作
+//             try {
+//               const [result] = await db.query(sql, [
+//                 lastname, 
+//                 firstname, 
+//                 email, 
+//                 mobile, 
+//                 birthday,
+//                 account,
+//                 hash, 
+//                 identification,
+//                 country,
+//                 township,
+//                 zipcode,
+//                 address,
+//                 photo  // 確保你在這裡傳遞正確的 fileName 給資料庫
+//               ]);
+//             } catch (ex) {
+//               console.error(ex); // 捕捉錯誤，進一步查看細節
+//               res.status(500).json({ error: ex.message });
+//               // 檢查是否成功插入資料
+//               output.result = result;
+//               output.success = !!result.affectedRows;
+//               output.imgUrl = fileUrl; // 返回上傳的圖片 URL
+//               output.photo = blob.name; // 返回 Firebase 上的檔名
   
-              res.json(output);
-            }
+//               res.json(output);
+//             }
 
-        });
+//         });
 
-        // 將檔案資料寫入 Firebase Storage
-        blobStream.end(file.buffer);
+//         // 將檔案資料寫入 Firebase Storage
+//         blobStream.end(file.buffer);
 
-    } catch (err) {
-        console.error(err);
-        output.exception = {
-            message: err.message,
-            stack: err.stack,
-        };
-        res.status(500).json(output);
-    }
-});
+//     } catch (err) {
+//         console.error(err);
+//         output.exception = {
+//             message: err.message,
+//             stack: err.stack,
+//         };
+//         res.status(500).json(output);
+//     }
+// });
 
-export default router;
+// export default router;
 
 
   //可以解析multipart/form-data
-  // router.post("/add", upload.single('photo'), async (req, res) => {
-  //   const output = {
-  //     success: false,
-  //     postData: req.body, // 除錯用
-  //   };
+  router.post("/add", upload.single('photo'), async (req, res) => {
+    const output = {
+      success: false,
+      postData: req.body, // 除錯用
+    };
     
 
-  //   //塞資料第一種用法
-  //   const {lastname, firstname, email, mobile, birthday, account, password, identification, zipcode, address, photo,township,country} = req.body;
+    //塞資料第一種用法
+    const {lastname, firstname, email, mobile, birthday, account, password, identification, zipcode, address, photo,township,country} = req.body;
     
-  //   //bcrypt加鹽放入資料庫
-  //   const hash = await bcrypt.hash(password, 8);
+    //bcrypt加鹽放入資料庫
+    const hash = await bcrypt.hash(password, 8);
   
-  // const sql = "INSERT INTO `profile`(`lastname`,`firstname`, `email`, `mobile`, `birthday`, `account`,`password`,`identification`, `country`,`township`,`zipcode`,`address`,`photo`,`created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,NOW() )";
-  // //塞入對應欄位的?值並顯示當前建立時間
-  // console.log('eddie',req.file);
-  // try {
-  // const [result] = await db.query(sql, 
-  //   [ lastname, 
-  //     firstname, 
-  //     email, 
-  //     mobile, 
-  //     birthday,
-  //     account,
-  //     hash, 
-  //     identification,
-  //     country,
-  //     township,
-  //     zipcode,
-  //     address,
-  //     req.file.filename //圖片是否存在
-  //   ]);
-  //   output.result = result;
-  //   output.success = !! result.affectedRows; //資料正確的話執行 (轉換布林值)
+  const sql = "INSERT INTO `profile`(`lastname`,`firstname`, `email`, `mobile`, `birthday`, `account`,`password`,`identification`, `country`,`township`,`zipcode`,`address`,`photo`,`created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,NOW() )";
+  //塞入對應欄位的?值並顯示當前建立時間
+  console.log('eddie',req.file);
+  try {
+  const [result] = await db.query(sql, 
+    [ lastname, 
+      firstname, 
+      email, 
+      mobile, 
+      birthday,
+      account,
+      hash, 
+      identification,
+      country,
+      township,
+      zipcode,
+      address,
+      req.file.filename //圖片是否存在
+    ]);
+    output.result = result;
+    output.success = !! result.affectedRows; //資料正確的話執行 (轉換布林值)
 
-  // } catch (ex) {
-  //   // output.exception = ex; //資料錯誤的話執行
-  //   output.exception = {
-  //     message: ex.message,
-  //     stack: ex.stack,
-  //   };
-  // }
-  // console.log(output);
-  //   res.json(output);
-  //   });
+  } catch (ex) {
+    // output.exception = ex; //資料錯誤的話執行
+    output.exception = {
+      message: ex.message,
+      stack: ex.stack,
+    };
+  }
+  console.log(output);
+    res.json(output);
+    });
   
-  //   export default router;
+    export default router;
 
   //塞資料第二種用法
   /*const sql = "INSERT INTO `address_book` SET ?";   //全部欄位塞?值再填入
