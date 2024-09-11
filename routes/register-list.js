@@ -1,5 +1,5 @@
 import express from "express";
-import db from "./../utils/connect-mysql.js"; //當前位置再回上一層
+import db from "./../utils/connect-mysql.js";
 import upload from "./../utils/upload-imgs.js";
 import bcrypt from "bcryptjs";
 import admin from './../utils/connect-firebase.js';
@@ -9,12 +9,6 @@ import tinify from "tinify";
 const router = express.Router();
 tinify.key = process.env.TINYPNG_API_KEY;
 
-// 設定 multer 上傳的存儲引擎和路徑
-// const storage = multer.memoryStorage();  // 這裡使用 memoryStorage()，也可以設定其他存儲方式
-// const upload = multer({ storage: storage });
-
-
-  
   router.get("/api", async (req, res) => {
     res.json(await getListData(req));
     /*
@@ -31,6 +25,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
   // 首先要先建立 Storage 的 Bucket(儲存桶)
   const bucket = admin.storage().bucket();
   
+  // 純firebase上傳測試, without MYSQL
   router.post('/image', upload.single('file'), function (req, res) {
     try {
       // 檢查是否有檔案
@@ -171,6 +166,8 @@ tinify.key = process.env.TINYPNG_API_KEY;
 
                 const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
 
+                const fileNameForDB = blob.name.replace('images/', '');
+
                 // 執行資料庫插入操作，將 photo 欄位存入 blob.name (Firebase 檔名)
                 const [result] = await db.query(sql, [
                     lastname, 
@@ -185,15 +182,14 @@ tinify.key = process.env.TINYPNG_API_KEY;
                     township,
                     zipcode,
                     address,
-                    blob.name // 將 photo 欄位設為 Firebase 上的檔名
+                    fileNameForDB // 將 photo 欄位設為 Firebase 上的檔名
                 ]);
-                console.log('SQL Insert Success:', result);
                 
                 // 檢查是否成功插入資料
                 if (result.affectedRows > 0) {
                     output.success = true;
                     output.result = result;
-                    output.photo = blob.name; // Firebase 檔名
+                    output.photo = fileNameForDB;
                 } else {
                     throw new Error('Failed to insert data into MySQL.');
                 }
@@ -240,7 +236,7 @@ export default router;
   
   // const sql = "INSERT INTO `profile`(`lastname`,`firstname`, `email`, `mobile`, `birthday`, `account`,`password`,`identification`, `country`,`township`,`zipcode`,`address`,`photo`,`created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,NOW() )";
   // //塞入對應欄位的?值並顯示當前建立時間
-  // console.log('eddie',req.file);
+
   // try {
   // const [result] = await db.query(sql, 
   //   [ lastname, 
