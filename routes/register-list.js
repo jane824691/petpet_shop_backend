@@ -166,8 +166,6 @@ tinify.key = process.env.TINYPNG_API_KEY;
 
                 const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
 
-                const fileNameForDB = blob.name.replace('images/', '');
-
                 // 執行資料庫插入操作，將 photo 欄位存入 blob.name (Firebase 檔名)
                 const [result] = await db.query(sql, [
                     lastname, 
@@ -182,14 +180,14 @@ tinify.key = process.env.TINYPNG_API_KEY;
                     township,
                     zipcode,
                     address,
-                    fileNameForDB // 將 photo 欄位設為 Firebase 上的檔名
+                    fileUrl // 將 photo 欄位設為 Firebase 上的檔名
                 ]);
                 
                 // 檢查是否成功插入資料
                 if (result.affectedRows > 0) {
                     output.success = true;
                     output.result = result;
-                    output.photo = fileNameForDB;
+                    output.photo = fileUrl;
                 } else {
                     throw new Error('Failed to insert data into MySQL.');
                 }
