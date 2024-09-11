@@ -126,10 +126,6 @@ tinify.key = process.env.TINYPNG_API_KEY;
     };
 
     try {
-        // 檢查是否有檔案上傳
-        if (!req.file) {
-            return res.status(400).send('No file uploaded.');
-        }
 
         // 取得上傳的檔案資訊
         const file = req.file;
@@ -162,7 +158,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
                 const hash = await bcrypt.hash(req.body.password, 8);
 
                 // 插入資料到 MySQL
-                const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country } = req.body;
+                const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country, photo } = req.body;
 
                 const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
 
@@ -182,7 +178,23 @@ tinify.key = process.env.TINYPNG_API_KEY;
                     address,
                     fileUrl // 將 photo 欄位設為 Firebase 上的檔名
                 ]);
-                
+                console.log(sql);
+                console.log([
+                    lastname, 
+                    firstname, 
+                    email, 
+                    mobile, 
+                    birthday,
+                    account,
+                    hash, 
+                    identification,
+                    country,
+                    township,
+                    zipcode,
+                    address,
+                    fileUrl
+                ]);
+
                 // 檢查是否成功插入資料
                 if (result.affectedRows > 0) {
                     output.success = true;
