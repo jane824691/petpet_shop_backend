@@ -178,23 +178,6 @@ tinify.key = process.env.TINYPNG_API_KEY;
                     address,
                     fileUrl // 將 photo 欄位設為 Firebase 上的檔名
                 ]);
-                console.log(sql);
-                console.log([
-                    lastname, 
-                    firstname, 
-                    email, 
-                    mobile, 
-                    birthday,
-                    account,
-                    hash, 
-                    identification,
-                    country,
-                    township,
-                    zipcode,
-                    address,
-                    fileUrl
-                ]);
-
                 // 檢查是否成功插入資料
                 if (result.affectedRows > 0) {
                     output.success = true;
