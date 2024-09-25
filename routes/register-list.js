@@ -25,7 +25,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
   // 首先要先建立 Storage 的 Bucket(儲存桶)
   const bucket = admin.storage().bucket();
   
-  // 純firebase上傳測試, without MYSQL
+  // 純firebase上傳測試, without 存 MYSQL
   router.post('/image', upload.single('file'), function (req, res) {
     try {
       // 檢查是否有檔案
@@ -79,7 +79,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
       res.status(500).send('Server error occurred while uploading image.');
   }
   });
-  
+  // 刪除圖片測試
   router.delete('/image', function (req, res) {
     // 取得檔案名稱
     const fileName = req.query.fileName;
@@ -93,114 +93,80 @@ tinify.key = process.env.TINYPNG_API_KEY;
     });
   });
 
-  router.get('/image', async function (req, res) {
-    // 取得檔案列表
-    try {
-      // 取得檔案列表
-      const [files] = await bucket.getFiles();
-      
-      const fileList = [];
-      for (const file of files) {
-          // 取得檔案的簽署 URL
-          const [fileUrl] = await file.getSignedUrl({
-              action: 'read',
-              expires: '03-09-2491'
-          });
-          fileList.push({
-              fileName: file.name,
-              imgUrl: fileUrl
-          });
-      }
-
-      res.send(fileList);
-  } catch (err) {
-      console.error(err);
-      res.status(500).send('取得檔案列表失敗');
-  }
-  });
-  
-  router.post("/add", upload.single('photo'), async (req, res) => {
+  // 真會員建立資料，圖片欄位為非必要選項
+router.post("/add", upload.single('photo'), async (req, res) => {
     const output = {
         success: false,
         postData: req.body, // 除錯用
     };
 
     try {
+        // bcrypt 加密密碼
+        const hash = await bcrypt.hash(req.body.password, 8);
 
-        // 取得上傳的檔案資訊
-        const file = req.file;
+        // 取得會員資料
+        const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country } = req.body;
 
-        // 使用 uuid 重新命名檔案並建立對應的 Firebase blob
-        const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
-        
-        // 建立 Firebase 上傳流
-        const blobStream = blob.createWriteStream({
-            metadata: {
-                contentType: file.mimetype, // 設置檔案類型
-            }
-        });
+        let fileUrl = null;
+        const file = req.file; // 檢查是否有上傳圖片
 
-        // 上傳檔案到 Firebase Storage
-        blobStream.on('error', (err) => {
-            console.error(err);
-            return res.status(500).send('Unable to upload image.');
-        });
-
-        blobStream.on('finish', async () => {
-            // 確保上傳完成後返回成功訊息
-            const [fileUrl] = await blob.getSignedUrl({
-                action: 'read',
-                expires: '03-09-2491'
+        // 如果有上傳圖片，處理圖片上傳到 Firebase Storage
+        if (file) {
+            const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
+            const blobStream = blob.createWriteStream({
+                metadata: {
+                    contentType: file.mimetype,
+                }
             });
 
-            try {
-                // bcrypt 加密密碼
-                const hash = await bcrypt.hash(req.body.password, 8);
+            // 處理上傳錯誤
+            blobStream.on('error', (err) => {
+                console.error(err);
+                return res.status(500).send('Unable to upload image.');
+            });
 
-                // 插入資料到 MySQL
-                const { lastname, firstname, email, mobile, birthday, account, identification, zipcode, address, township, country, photo } = req.body;
-
-                const sql = "INSERT INTO `profile`(`lastname`, `firstname`, `email`, `mobile`, `birthday`, `account`, `password`, `identification`, `country`, `township`, `zipcode`, `address`, `photo`, `created_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
-
-                // 執行資料庫插入操作，將 photo 欄位存入 blob.name (Firebase 檔名)
-                const [result] = await db.query(sql, [
-                    lastname, 
-                    firstname, 
-                    email, 
-                    mobile, 
-                    birthday,
-                    account,
-                    hash, 
-                    identification,
-                    country,
-                    township,
-                    zipcode,
-                    address,
-                    fileUrl // 將 photo 欄位設為 Firebase 上的檔名
-                ]);
-                // 檢查是否成功插入資料
-                if (result.affectedRows > 0) {
-                    output.success = true;
-                    output.result = result;
-                    output.photo = fileUrl;
-                } else {
-                    throw new Error('Failed to insert data into MySQL.');
-                }
-
-                // 返回成功信息
-                return res.status(200).json(output);
-            } catch (ex) {
-                console.error(ex); // 捕捉錯誤，進一步查看細節
-                return res.status(500).json({
-                    success: false,
-                    error: ex.message,
+            // 等待上傳完成
+            await new Promise((resolve, reject) => {
+                blobStream.on('finish', async () => {
+                    try {
+                        const [signedUrl] = await blob.getSignedUrl({
+                            action: 'read',
+                            expires: '03-09-2491'
+                        });
+                        fileUrl = signedUrl; // 獲取上傳後的圖片 URL
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
                 });
-            }
-        });
+                blobStream.end(file.buffer);
+            });
+        }
 
-        // 將檔案資料寫入 Firebase Storage
-        blobStream.end(file.buffer);
+        // 構建 SQL 插入語句，圖片為可選欄位
+        // 插入時間為CONVERT_TZ(NOW()是為了配合zeabur這個雲服務端的伺服器時間跟台灣時區不同，改用UNIX_TIMESTAMP()可存時間戳
+        const sql = `INSERT INTO profile 
+        (lastname, firstname, email, mobile, birthday, account, password, identification, country, township, zipcode, address, photo, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))`;
 
+        const params = [
+            lastname, firstname, email, mobile, birthday, account, hash, identification,
+            country, township, zipcode, address, fileUrl // 如果沒有圖片，fileUrl 為 null
+        ];
+
+        // 插入資料到 MySQL
+        const [result] = await db.query(sql, params);
+
+        // 檢查是否成功插入資料
+        if (result.affectedRows > 0) {
+            output.success = true;
+            output.result = result;
+            output.photo = fileUrl; // 如果有圖片，返回其 URL
+        } else {
+            throw new Error('Failed to insert data into MySQL.');
+        }
+
+        return res.status(200).json(output);
     } catch (err) {
         console.error(err);
         output.exception = {
