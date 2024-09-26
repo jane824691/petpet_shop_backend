@@ -166,7 +166,7 @@ router.post("/add", upload.none(), async (req, res) => {
 
   try {
     const sql1 =
-    "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', CONVERT_TZ(NOW(), '+00:00', '+08:00'))";
+    "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
   
     const [result1] = await db.query(sql1, [
       name,
