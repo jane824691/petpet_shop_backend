@@ -14,7 +14,7 @@ tinify.key = process.env.TINYPNG_API_KEY;
     /*
     //暫時註解掉，啟用token功能時需打開
     // 表示不確定有沒有jwt(但確定有前面屬性)，若有jwt&後面屬性就給資料。
-    if(res.locals.jwt?.id){
+    if(res.locals.jwt?.sid){
       return res.json(await getListData(req));
     } else {
       return res.json({success: false, error: "沒有授權, 不能取得資料"});

@@ -255,7 +255,7 @@ app.post("/login-jwt", async (req, res) => {
   output.sid = row.sid;
   output.account = row.account;
     //expiresIn(自動登出時間)
-    output.token = jwt.sign({ sid: row.sid, account: row.account,expiresIn: '600s'}, process.env.JWT_SECRET);
+    output.token = jwt.sign({ sid: row.sid, account: row.account, expiresIn: '600s'}, process.env.JWT_SECRET);
   res.json(output);
 });
 

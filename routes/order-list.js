@@ -101,7 +101,7 @@ const getListData = async (req) => {
 router.get("/api", async (req, res) => {
   res.json(await getListData(req));
   /*
-  if(res.locals.jwt?.id){
+  if(res.locals.jwt?.sid){
     return res.json(await getListData(req));
   } else {
     return res.json({success: false, error: "沒有授權, 不能取得資料"});
