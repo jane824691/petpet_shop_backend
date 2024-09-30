@@ -80,21 +80,16 @@ app.use((req, res, next) => {
   const auther = req.get("Authorization");
   // 查看是否有"Bearer "，有的話就切掉
   if (auther && auther.indexOf("Bearer ") === 0) {
-    console.log(auther);
     const token = auther.slice(7); // 如果有，去掉 "Bearer "，Bearer後面必須空格
     // 避免token亂給，出錯提示
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET);
-      console.log({ payload });
       // 將 payload 存儲在 res.locals 中，以便後續使用
       res.locals.jwt = payload;
     } catch (ex) {
       console.error(" JWT驗證失敗:", ex);
     }
   }
-
-  // 測試用，不用登入&token就可取得資料(等於不用登入就可查看資料)
-  //res.locals.jwt = { sid: 1, account: "LittleHao" };
 
   next(); //往下傳遞req, res物件
 });
