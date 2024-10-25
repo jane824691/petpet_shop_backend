@@ -16,6 +16,7 @@ const config = {
 
 admin.initializeApp({
     credential: admin.credential.cert(config),
+    // TODO: 10/30/2024起要改.firebasestorage.com
     storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
 });
 

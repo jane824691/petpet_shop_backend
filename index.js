@@ -36,7 +36,7 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://localhost:9000"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
@@ -249,8 +249,13 @@ app.post("/login-jwt", async (req, res) => {
   output.success = true;
   output.sid = row.sid;
   output.account = row.account;
-    //expiresIn(自動登出時間)
-    output.token = jwt.sign({ sid: row.sid, account: row.account, expiresIn: '600s'}, process.env.JWT_SECRET);
+  //expiresIn(自動登出時間)
+  // output.token = jwt.sign({ sid: row.sid, account: row.account, expiresIn: '600s'}, process.env.JWT_SECRET);
+  output.token = jwt.sign(
+    { sid: row.sid, account: row.account },
+    process.env.JWT_SECRET,
+    // { expiresIn: '7200s' } // 在這裡設置過期時間
+  );
   res.json(output);
 });
 
