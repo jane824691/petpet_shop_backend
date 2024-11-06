@@ -6,16 +6,13 @@ import moment from "moment-timezone";
 import cors from "cors";
 import mysql_session from "express-mysql-session";
 import bcrypt from "bcryptjs";
-import sales from "./data/sales.json" assert { type: "json" };
 import jwt from "jsonwebtoken";
 import path from "path";
 import logger from "morgan";
 import cookieParser from "cookie-parser";
 import { fileURLToPath, pathToFileURL } from "url";
-//import multer from "multer";
 //帶入後端分頁的路由
 //const upload = multer({ dest: "tmp_uploads/" }); 暫存區
-import upload from "./utils/upload-imgs.js";
 import db from "./utils/connect-mysql.js";
 import registerListRouter from "./routes/register-list.js";
 import admin2Router from "./routes/admin2.js";
