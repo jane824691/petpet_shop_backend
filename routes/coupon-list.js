@@ -7,7 +7,6 @@ const router = express.Router();
 
 router.use((req, res, next) => {
   const u = req.url.split("?")[0]; // 只要路徑
-  console.log({ u });
   if (req.method === "GET" && u === "/") {
     return next();
   }
@@ -59,8 +58,6 @@ const getListData = async (req) => {
     qs.endDate = endDate;
     where += ` AND birthday <= '${endDate}' `;
   }
-
-//console.log(where)
 
   let totalRows = 0;
   let totalPages = 0;
@@ -137,7 +134,6 @@ const getListData = async (req) => {
 
 
   router.post("/add", upload.none(), async (req, res) => {
-    console.log('Received request with data:', req.body);
 
     const output = {
       success: false,
@@ -147,14 +143,12 @@ const getListData = async (req) => {
     // 假設 coupon 表格中有 coupon_id、hash、discount_coins、expiry_date、coupon_status 欄位
     const { hash, discount_coins, expiry_date, coupon_status, sid } = req.body;
     
-    console.log([ hash, discount_coins, expiry_date, coupon_status])
     const sql = `
       INSERT INTO \`coupon\` (\`hash\`, \`discount_coins\`, \`created_at\`, \`expiry_date\`, \`coupon_status\`)
       VALUES (?, ?, NOW(), ?, ?);
     `;
   try{
     const values = [hash, discount_coins, expiry_date, coupon_status];
-    console.log(values)
     const [couponResult] = await db.query(sql, values);
     output.couponResult = couponResult;
 
@@ -169,7 +163,6 @@ const getListData = async (req) => {
   
 //含上傳圖片
 router.post("/coupon-use/add", upload.none(), async (req, res) => {
-  console.log('Received request with data:', req.body);
 
   const output = {
     success: false,
@@ -179,7 +172,6 @@ router.post("/coupon-use/add", upload.none(), async (req, res) => {
   // 假設 coupon 表格中有 coupon_id、hash、discount_coins、expiry_date、coupon_status 欄位
   const { coupon_id, sid } = req.body;
   const status = 0;
-  console.log([ coupon_id, sid, status ])
   const sql = `
     INSERT INTO \`coupon_use\` (\`coupon_id\`, \`sid\`, \`coupon_status\`, \`created_at3\`)
     VALUES (?, ?, ?, NOW());
@@ -188,15 +180,9 @@ router.post("/coupon-use/add", upload.none(), async (req, res) => {
 
   const [couponUseResult] = await db.query(sql, values);
   output.couponUseResult = couponUseResult;
-  console.log(`
-  INSERT INTO \`coupon_use\` (\`coupon_id\`, \`sid\`, \`coupon_status\`, \`created_at3\`)
-    VALUES (?, ?, ?, NOW());
-  VALUES ('${coupon_id}', '${sid}', '${status}', NOW());
-`);
 
 try{
   const values = [hash, discount_coins, expiry_date, coupon_status];
-  console.log(values)
   const [couponResult] = await db.query(sql, values);
   output.couponResult = couponResult;
 
