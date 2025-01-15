@@ -274,7 +274,7 @@ app.get("/check", async (req, res) => {
     `
   SELECT
     coupon.\`hash\`,
-    coupon.\`discount_type\`,
+    coupon.\`discount_coins\`,
     coupon.\`expiry_date\`,
     coupon.\`coupon_status\`,
     coupon.\`created_at\`

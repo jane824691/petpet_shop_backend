@@ -144,20 +144,16 @@ const getListData = async (req) => {
       postData: req.body, // 除錯用
     };
   
-    // 假設 coupon 表格中有 coupon_id、hash、discount_type、expiry_date、coupon_status 欄位
-    const { hash, discount_type, expiry_date, coupon_status, sid } = req.body;
+    // 假設 coupon 表格中有 coupon_id、hash、discount_coins、expiry_date、coupon_status 欄位
+    const { hash, discount_coins, expiry_date, coupon_status, sid } = req.body;
     
-    console.log([ hash, discount_type, expiry_date, coupon_status])
+    console.log([ hash, discount_coins, expiry_date, coupon_status])
     const sql = `
-      INSERT INTO \`coupon\` (\`hash\`, \`discount_type\`, \`created_at2\`, \`expiry_date\`, \`coupon_status\`)
+      INSERT INTO \`coupon\` (\`hash\`, \`discount_coins\`, \`created_at\`, \`expiry_date\`, \`coupon_status\`)
       VALUES (?, ?, NOW(), ?, ?);
     `;
-    console.log(`
-    INSERT INTO \`coupon\` (\`hash\`, \`discount_type\`, \`created_at2\`, \`expiry_date\`, \`coupon_status\`)
-    VALUES ('${hash}', '${discount_type}', NOW(), '${expiry_date}', '${coupon_status}');
-  `);
   try{
-    const values = [hash, discount_type, expiry_date, coupon_status];
+    const values = [hash, discount_coins, expiry_date, coupon_status];
     console.log(values)
     const [couponResult] = await db.query(sql, values);
     output.couponResult = couponResult;
@@ -180,9 +176,9 @@ router.post("/coupon-use/add", upload.none(), async (req, res) => {
     postData: req.body, // 除錯用
   };
 
-  // 假設 coupon 表格中有 coupon_id、hash、discount_type、expiry_date、coupon_status 欄位
+  // 假設 coupon 表格中有 coupon_id、hash、discount_coins、expiry_date、coupon_status 欄位
   const { coupon_id, sid } = req.body;
-  const status = "可使用"
+  const status = 0;
   console.log([ coupon_id, sid, status ])
   const sql = `
     INSERT INTO \`coupon_use\` (\`coupon_id\`, \`sid\`, \`coupon_status\`, \`created_at3\`)
@@ -199,7 +195,7 @@ router.post("/coupon-use/add", upload.none(), async (req, res) => {
 `);
 
 try{
-  const values = [hash, discount_type, expiry_date, coupon_status];
+  const values = [hash, discount_coins, expiry_date, coupon_status];
   console.log(values)
   const [couponResult] = await db.query(sql, values);
   output.couponResult = couponResult;
@@ -222,16 +218,16 @@ res.json(output);
     
 
   //塞資料第一種用法
-//   const {hash, discount_type, created_at, expiry_date, coupon_status} = req.body;
+//   const {hash, discount_coins, created_at, expiry_date, coupon_status} = req.body;
 //   const sql = `
-//   INSERT INTO \`coupon\` (\`hash\`, \`discount_type\`, \`created_at\`,\`expiry_date\`, \`coupon_status\`)
-//   SELECT \`coupon_use\`.\`hash\`, \`coupon_use\`.\`discount_type\`, NOW(), \`coupon_use\`.\`expiry_date\`, \`coupon_use\`.\`coupon_status\`
+//   INSERT INTO \`coupon\` (\`hash\`, \`discount_coins\`, \`created_at\`,\`expiry_date\`, \`coupon_status\`)
+//   SELECT \`coupon_use\`.\`hash\`, \`coupon_use\`.\`discount_coins\`, NOW(), \`coupon_use\`.\`expiry_date\`, \`coupon_use\`.\`coupon_status\`
 //   FROM \`coupon_use\`
 //   WHERE \`coupon_use\`.\`coupon_id\` = ?;
 // `;
 
 // 使用此 SQL 查詢時，使用預備語句的方式傳入相應的值
-// const values = [your_hash_value, your_discount_type_value, your_coupon_status_value, your_expiry_date_value];
+// const values = [your_hash_value, your_discount_coins_value, your_coupon_status_value, your_expiry_date_value];
 
 
   //塞入對應欄位的?值並顯示當前建立時間
@@ -240,7 +236,7 @@ res.json(output);
   // try {
   // const [result] = await db.query(sql, 
   //   [ hash, 
-  //     discount_type, 
+  //     discount_coins, 
   //     created_at, 
   //     coupon_status, 
   //     expiry_date, 
