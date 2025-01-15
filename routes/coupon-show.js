@@ -25,6 +25,26 @@ router.post("/", async (req, res) => {
     WHERE profile.sid = ?`,
     [sid]
   );
+  
+  // 查詢時for迴圈找尋比對當前時間, 同時更新已逾期的資料庫優惠券狀態欄位
+  const currentTime = new Date();
+  for (let coupon of rows) {
+    if (currentTime > new Date(coupon.expiry_date)) {
+       // 更新 coupon 表的狀態
+      await db.query(
+        'UPDATE coupon SET coupon_status = ? WHERE coupon_id = ?',
+        [2, coupon.coupon_id]
+      );
+      
+      // 更新 coupon_use 表的狀態
+      await db.query(
+        'UPDATE coupon_use SET coupon_status = ? WHERE coupon_id = ?',
+        [2, coupon.coupon_id]
+      );
+      coupon.coupon_status = 2; // coupon_status: 0 = init, 1 = used, 2 = expired
+    }
+  }
+
   if (rows.length) return res.json(rows);
   else return res.json({});
 });
@@ -33,7 +53,7 @@ router.get("/add", async (req, res) => {
   res.render("profile/add");
 });
 
-//獲取會員資料(新增)
+// 獲取會員資料(新增)
 router.post("/add", upload.none(), async (req, res) => {
   const output = {
     success: false,
