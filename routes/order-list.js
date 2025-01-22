@@ -97,7 +97,6 @@ const getListData = async (req) => {
   return output;
 };
 
-
 router.get("/api", async (req, res) => {
   res.json(await getListData(req));
   /*
@@ -109,7 +108,6 @@ router.get("/api", async (req, res) => {
   */
 });
 
-
 router.get("/person/:sid", async (req, res) => {
   try {
     let sid = req.params.sid || 1; // 使用 req.params.sid 來獲取路徑參數
@@ -119,14 +117,14 @@ router.get("/person/:sid", async (req, res) => {
 
     let output = {
       success: true,
-      page: 1, 
+      page: 1,
       perPage: 6,
       rows: rows,
       totalRows: rows.length,
       totalPages: 1,
       qs: {},
       redirect: "",
-      info: ""
+      info: "",
     };
 
     res.json(output);
@@ -144,9 +142,7 @@ router.get("/person/:sid", async (req, res) => {
   }
 });
 
-
-
-router.post("/add", upload.none(), async (req, res) => { 
+router.post("/add", upload.none(), async (req, res) => {
   const output = {
     success: false,
     postData: req.body,
@@ -162,22 +158,49 @@ router.post("/add", upload.none(), async (req, res) => {
     pay_way,
     postcode,
     address,
+    coupon_id,
   } = req.body;
 
   try {
+    // 查詢優惠券資訊
+    const [coupon] = await db.query(
+      "SELECT discount_coins FROM coupon WHERE coupon_id = ? AND coupon_status = 0",
+      [coupon_id]
+    );
+
+    if (coupon.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "無效的優惠券或優惠券已使用" });
+    }
+
+    // 計算折扣後金額
+    const discountAmount = Number(coupon[0].discount_coins);
+    const finalPrice = Math.max(Number(netTotal) - discountAmount, 0);
+
+    // 插入訂單對應db欄位
     const sql1 =
-    "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
-  
+      "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
+
     const [result1] = await db.query(sql1, [
       name,
       sid,
       phone,
       email,
-      netTotal,
+      finalPrice, // 插入計算後的金額
       pay_way,
       postcode,
       address,
     ]);
+
+    // 更新優惠券table狀態為已使用
+    // coupon_status: 0 = init, 1 = used, 2 = expired
+    const updateCouponSql =
+      "UPDATE `coupon` SET `coupon_status` = 1 WHERE `coupon_id` = ?";
+    await db.query(updateCouponSql, [coupon_id]);
+    const updateCouponUseSql =
+      "UPDATE coupon_use SET `coupon_status` = 1 WHERE `coupon_id` = ?";
+    await db.query(updateCouponUseSql, [coupon_id]);
 
 
     // 準備同時生成第2張表order_child + 同一筆oid對很多商品
@@ -185,16 +208,25 @@ router.post("/add", upload.none(), async (req, res) => {
 
     const { pid, sale_price, actual_amount } = req.body;
 
-    let result2;  // 在這裡宣告 result2
+    let result2; // 在這裡宣告 result2
 
-    if (Array.isArray(pid) && Array.isArray(sale_price) && Array.isArray(actual_amount) &&
-        pid.length === sale_price.length && sale_price.length === actual_amount.length) {
-
+    if (
+      Array.isArray(pid) &&
+      Array.isArray(sale_price) &&
+      Array.isArray(actual_amount) &&
+      pid.length === sale_price.length &&
+      sale_price.length === actual_amount.length
+    ) {
       const sql2 =
         "INSERT INTO `order_child`(`oid`, `pid`, `sale_price`, `actual_amount`) VALUES (?, ?, ?, ?)";
 
       for (let i = 0; i < pid.length; i++) {
-        [result2] = await db.query(sql2, [insertedOrderId, pid[i], sale_price[i], actual_amount[i]]);
+        [result2] = await db.query(sql2, [
+          insertedOrderId,
+          pid[i],
+          sale_price[i],
+          actual_amount[i],
+        ]);
       }
 
       output.result = {
@@ -218,8 +250,6 @@ router.post("/add", upload.none(), async (req, res) => {
   res.json(output);
 });
 
-
-
 router.get("/one/:oid", async (req, res) => {
   let oid = +req.params.oid || 1;
   const [rows, fields] = await db.query(
@@ -227,11 +257,10 @@ router.get("/one/:oid", async (req, res) => {
     FROM order_list o
     INNER JOIN order_child c ON c.oid = o.oid
     INNER JOIN product p ON p.pid = c.pid
-    WHERE o.oid IN (SELECT oid FROM order_child) AND o.oid = ${ oid };`
+    WHERE o.oid IN (SELECT oid FROM order_child) AND o.oid = ${oid};`
   );
   if (rows.length) return res.json(rows); // 直接回傳所有資料
   else return res.json({});
 });
-
 
 export default router;
