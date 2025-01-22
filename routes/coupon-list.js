@@ -148,7 +148,7 @@ const getListData = async (req) => {
       VALUES (?, ?, NOW(), ?, ?);
     `;
   try{
-    const values = [hash, discount_coins, expiry_date, coupon_status];
+    const values = [hash, discount_coins, expiry_date, coupon_status]; // coupon_status: 0 = init, 1 = used, 2 = expired
     const [couponResult] = await db.query(sql, values);
     output.couponResult = couponResult;
 
