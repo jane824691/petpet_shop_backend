@@ -154,29 +154,77 @@ router.post("/add", upload.none(), async (req, res) => {
     sid,
     phone,
     email,
-    netTotal,
     pay_way,
     postcode,
     address,
     coupon_id,
+    pid, // pid 是一個陣列
+    actual_amount, // actual_amount 也是一個陣列
   } = req.body;
 
+  // 驗證商品 ID 和數量的格式與數量是否匹配
+  if (
+    !Array.isArray(pid) ||
+    !Array.isArray(actual_amount) ||
+    pid.length !== actual_amount.length
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "商品 ID 和數量資料格式不正確或數據不匹配",
+    });
+  }
+
   try {
-    // 查詢優惠券資訊
-    const [coupon] = await db.query(
-      "SELECT discount_coins FROM coupon WHERE coupon_id = ? AND coupon_status = 0",
-      [coupon_id]
+    // 從資料庫查詢商品價格
+    const [products] = await db.query(
+      "SELECT pid, product_price FROM product WHERE pid IN (?)",
+      [pid]
     );
 
-    if (coupon.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "無效的優惠券或優惠券已使用" });
+    // 計算購物車金額
+    let netTotal = 0;
+    let product;
+    for (let i = 0; i < pid.length; i++) {
+      product = products.find((p) => p.pid === pid[i]);
+      if (!product) {
+        return res
+          .status(400)
+          .json({ success: false, message: `找不到商品 ID: ${pid[i]}` });
+      }
+
+      netTotal += product.product_price * actual_amount[i];
     }
 
-    // 計算折扣後金額
-    const discountAmount = Number(coupon[0].discount_coins);
-    const finalPrice = Math.max(Number(netTotal) - discountAmount, 0);
+    // 如果有傳入 coupon_id，則查詢優惠券資訊
+    let discountAmount = 0;
+    if (coupon_id) {
+      const [coupon] = await db.query(
+        "SELECT discount_coins FROM coupon WHERE coupon_id = ? AND coupon_status = 0",
+        [coupon_id]
+      );
+
+      // 如果優惠券不存在或已使用，回傳錯誤
+      if (coupon.length === 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: "無效的優惠券或優惠券已使用" });
+      }
+
+      // 更新優惠券table狀態為已使用
+      // coupon_status: 0 = init, 1 = used, 2 = expired
+      const updateCouponSql =
+        "UPDATE `coupon` SET `coupon_status` = 1 WHERE `coupon_id` = ?";
+      await db.query(updateCouponSql, [coupon_id]);
+      const updateCouponUseSql =
+        "UPDATE coupon_use SET `coupon_status` = 1 WHERE `coupon_id` = ?";
+      await db.query(updateCouponUseSql, [coupon_id]);
+
+      // 計算折扣後金額
+      discountAmount = Number(coupon[0].discount_coins); // [ { discount_coins: 50 } ]
+    }
+
+    // 購物車金額 - 折扣 = 帳單總金額
+    const finalPrice = Math.max(Number(netTotal) - Number(discountAmount), 0);
 
     // 插入訂單對應db欄位
     const sql1 =
@@ -191,55 +239,47 @@ router.post("/add", upload.none(), async (req, res) => {
       pay_way,
       postcode,
       address,
+      pid,
+      actual_amount,
     ]);
-
-    // 更新優惠券table狀態為已使用
-    // coupon_status: 0 = init, 1 = used, 2 = expired
-    const updateCouponSql =
-      "UPDATE `coupon` SET `coupon_status` = 1 WHERE `coupon_id` = ?";
-    await db.query(updateCouponSql, [coupon_id]);
-    const updateCouponUseSql =
-      "UPDATE coupon_use SET `coupon_status` = 1 WHERE `coupon_id` = ?";
-    await db.query(updateCouponUseSql, [coupon_id]);
-
 
     // 準備同時生成第2張表order_child + 同一筆oid對很多商品
     const insertedOrderId = result1.insertId;
 
-    const { pid, sale_price, actual_amount } = req.body;
+    // 使用一個批量插入方式來提高效率
+    const orderChildValues = [];
 
-    let result2; // 在這裡宣告 result2
-
-    if (
-      Array.isArray(pid) &&
-      Array.isArray(sale_price) &&
-      Array.isArray(actual_amount) &&
-      pid.length === sale_price.length &&
-      sale_price.length === actual_amount.length
-    ) {
-      const sql2 =
-        "INSERT INTO `order_child`(`oid`, `pid`, `sale_price`, `actual_amount`) VALUES (?, ?, ?, ?)";
-
-      for (let i = 0; i < pid.length; i++) {
-        [result2] = await db.query(sql2, [
-          insertedOrderId,
-          pid[i],
-          sale_price[i],
-          actual_amount[i],
-        ]);
+    for (let i = 0; i < pid.length; i++) {
+      const product = products.find((p) => p.pid === pid[i]);
+      if (!product) {
+        return res.status(400).json({
+          success: false,
+          message: `找不到商品 ID: ${pid[i]}`,
+        });
       }
-
-      output.result = {
-        order_list: result1,
-        order_child: result2,
-      };
-
-      output.success = !!result1.affectedRows && !!result2.affectedRows;
-    } else {
-      // Handle case where pid, sale_price, and actual_amount are not arrays or have different lengths
-      output.success = !!result1.affectedRows;
-      output.result = { order_list: result1 };
+      
+      // 將插入值添加到數組中
+      orderChildValues.push([
+        insertedOrderId,
+        pid[i],
+        product.product_price, // 使用從資料庫查出的價格
+        actual_amount[i],
+      ]);
     }
+
+    // 批量插入數據到 order_child 表
+    // product_price是商品價格, sale_price可能是活動折扣後入庫價格
+    const sql2 =
+      "INSERT INTO `order_child`(`oid`, `pid`, `sale_price`, `actual_amount`) VALUES ?";      
+      
+    const [result2] = await db.query(sql2, [orderChildValues]);
+
+    output.success = true;
+    output.result = {
+      order_list: result1,
+      order_child: result2,
+    };
+
   } catch (ex) {
     output.exception = {
       message: ex.message,
