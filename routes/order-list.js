@@ -223,8 +223,9 @@ router.post("/add", upload.none(), async (req, res) => {
       discountAmount = Number(coupon[0].discount_coins); // [ { discount_coins: 50 } ]
     }
 
-    // 購物車金額 - 折扣 = 帳單總金額
-    const finalPrice = Math.max(Number(netTotal) - Number(discountAmount), 0);
+    // 購物車金額 - 折扣 + 假運費(寫死) = 帳單總金額
+    const shippingFee = 30;
+    const finalPrice = Math.max(Number(netTotal) - Number(discountAmount) + shippingFee, 0);
 
     // 插入訂單對應db欄位
     const sql1 =
