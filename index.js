@@ -20,6 +20,7 @@ import couponListRouter from "./routes/coupon-list.js";
 import couponListUseRouter from "./routes/coupon-list.js";
 //新增&讀取資料
 import productRouter from "./routes/product.js";
+import commentsRouter from "./routes/comments.js";
 import orderListRouter from "./routes/order-list.js";
 import membercenterRouter from "./routes/member.js";
 import couponShowRouter from "./routes/coupon-show.js";
@@ -97,6 +98,7 @@ app.use(cors());
 app.use("/register-list", registerListRouter);
 app.use("/admins", admin2Router);
 app.use("/product", productRouter);
+app.use("/comments", commentsRouter);
 app.use("/order-list", orderListRouter);
 app.use("/coupon-show", couponShowRouter);
 app.use("/coupon-list", couponListRouter);
