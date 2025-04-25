@@ -3,11 +3,21 @@ import db from "./../utils/connect-mysql.js";
 
 const router = express.Router();
 
-// TODO:先做撈出pid底下所有評論 > 接著add評論 
-router.post("/comments/:pid", async (req, res) => {
+// ALL
+router.post("/", async (req, res) => {
+    const [rows, fields] = await db.query(
+        `SELECT * FROM comments;`
+    );
+    if (rows.length) return res.json(rows);
+    else return res.json({});
+});
+
+
+// 先撈出pid底下所有評論
+router.post("/:pid", async (req, res) => {
+    let pid = req.body.pid;
     const [rows] = await db.query(
-        "SELECT * FROM pet_shop.order_list o JOIN pet_shop.order_child oi ON o.oid = oi.oid WHERE oi.pid = 193");
-    console.log('recommend data:', rows);
+        `SELECT * FROM comments WHERE pid=${pid}`);
     if (rows.length) return res.json(rows); // 直接回傳所有資料
     else return res.json({});
 });

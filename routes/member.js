@@ -1,7 +1,6 @@
 import express from "express";
 import db from "../utils/connect-mysql.js";
 import jwt from "jsonwebtoken";
-import dayjs from "dayjs";
 import upload from "./../utils/upload-imgs.js";
 import admin from './../utils/connect-firebase.js';
 import { v4 as uuidv4 } from "uuid";
