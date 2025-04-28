@@ -13,12 +13,42 @@ router.post("/", async (req, res) => {
 });
 
 // 撈出pid底下所有評論
+// router.post("/one/:pid", async (req, res) => {
+//     const pid = req.params.pid
+//     const page = req.body.page || 1  // 這邊拿前端傳來的 page 頁數（預設第1頁）
+//     const pageSize = 3               // 每頁固定抓3筆
+
+//     const offset = (page - 1) * pageSize
+//     const [rows] = await db.query(
+//         `SELECT comments.*, profile.account, profile.photo FROM comments LEFT JOIN profile ON comments.sid = profile.sid WHERE comments.pid = ${pid} ORDER BY created_date DESC;`);
+//         if (rows.length) return res.json(rows); // 直接回傳所有資料
+//     else return res.json({});
+// });
+
 router.post("/one/:pid", async (req, res) => {
-    let pid = req.params.pid;
-    const [rows] = await db.query(
-        `SELECT comments.*, profile.account, profile.photo FROM comments LEFT JOIN profile ON comments.sid = profile.sid WHERE comments.pid = ${pid}`);
-        if (rows.length) return res.json(rows); // 直接回傳所有資料
-    else return res.json({});
+    const pid = req.params.pid
+    const page = req.body.page || 1  // 這邊拿前端傳來的 page 頁數（預設第1頁）
+    const pageSize = 3               // 每頁固定抓3筆
+
+    const offset = (page - 1) * pageSize
+
+    try {
+        const [rows] = await db.query(
+            `SELECT comments.*, profile.account, profile.photo
+            FROM comments
+            LEFT JOIN profile ON comments.sid = profile.sid
+            WHERE comments.pid = ?
+            ORDER BY created_date DESC
+            LIMIT ? OFFSET ?`,
+            [pid, pageSize, offset]
+        );
+
+        if (rows.length) return res.json(rows)
+        else return res.json([])
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: '資料庫錯誤' })
+    }
 });
 export default router;
 
