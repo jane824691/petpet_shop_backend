@@ -12,6 +12,16 @@ router.post("/", async (req, res) => {
     else return res.json({});
 });
 
+// 撈出pid底下所有評論
+router.post("/one/:pid", async (req, res) => {
+    let pid = req.params.pid;
+    const [rows] = await db.query(
+        `SELECT comments.*, profile.account, profile.photo FROM comments LEFT JOIN profile ON comments.sid = profile.sid WHERE comments.pid = ${pid}`);
+        if (rows.length) return res.json(rows); // 直接回傳所有資料
+    else return res.json({});
+});
+export default router;
+
 router.post("/add", async (req, res) => {
     const output = {
         success: false,
@@ -65,13 +75,3 @@ router.post("/add", async (req, res) => {
     return res.json(output)
 
 });
-
-// 先撈出pid底下所有評論
-router.post("/:pid", async (req, res) => {
-    let pid = req.params.pid;
-    const [rows] = await db.query(
-        `SELECT * FROM comments WHERE pid=${pid}`);
-    if (rows.length) return res.json(rows); // 直接回傳所有資料
-    else return res.json({});
-});
-export default router;
