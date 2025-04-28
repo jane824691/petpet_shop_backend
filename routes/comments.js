@@ -3,6 +3,15 @@ import db from "./../utils/connect-mysql.js";
 
 const router = express.Router();
 
+// ALL
+router.post("/", async (req, res) => {
+    const [rows, fields] = await db.query(
+        `SELECT * FROM comments;`
+    );
+    if (rows.length) return res.json(rows);
+    else return res.json({});
+});
+
 router.post("/add", async (req, res) => {
     const output = {
         success: false,
@@ -10,6 +19,7 @@ router.post("/add", async (req, res) => {
     };
 
     const {
+        comments_id,
         pid,
         sid,
         content,
@@ -23,8 +33,7 @@ router.post("/add", async (req, res) => {
             message: "必填欄位為空"
         })
     }
-    console.log('在驗證檢查資格是否買過');
-    
+
     // 檢查是否有購買過該商品
     const [checkRows] = await db.query(
         `SELECT COUNT(*) AS count
@@ -33,8 +42,6 @@ router.post("/add", async (req, res) => {
         WHERE o.sid = ? AND oi.pid = ?`,
         [sid, pid]
     );
-    console.log('驗證完SQL');
-
 
     if (checkRows[0].count) {
         return res.status(400).json({
@@ -43,32 +50,21 @@ router.post("/add", async (req, res) => {
         })
     }
 
-    // const sql =
-    //     "INSERT INTO `comments`(`comments_id`, `pid`, `sid`, `content`, `rating`, `created_date`) VALUES (?, ?, ?, ?, ?, NOW())";
-    // const [result] = await db.query(sql, [
-    //     pid,
-    //     sid,
-    //     content,
-    //     rating,
-    //     created_date,
-    // ])
+    const sql =
+        "INSERT INTO `comments`(`comments_id`, `pid`, `sid`, `content`, `rating`, `created_date`) VALUES (?, ?, ?, ?, ?, NOW())";
+    const [result] = await db.query(sql, [
+        comments_id,
+        pid,
+        sid,
+        content,
+        rating,
+        created_date,
+    ])
 
-    // output.success = !!result.affectedRows;
-    // return res.json(output)
+    output.success = !!result.affectedRows;
+    return res.json(output)
 
 });
-
-
-//TODO:研究WHY攔截到所有路由, 導致PID${PID}這邊會被直接塞進去ADD
-// ALL
-router.post("/", async (req, res) => {
-    const [rows, fields] = await db.query(
-        `SELECT * FROM comments;`
-    );
-    if (rows.length) return res.json(rows);
-    else return res.json({});
-});
-
 
 // 先撈出pid底下所有評論
 router.post("/:pid", async (req, res) => {
@@ -78,5 +74,4 @@ router.post("/:pid", async (req, res) => {
     if (rows.length) return res.json(rows); // 直接回傳所有資料
     else return res.json({});
 });
-
 export default router;
