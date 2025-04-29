@@ -39,7 +39,7 @@ router.post("/one/:pid", async (req, res) => {
             LEFT JOIN profile ON comments.sid = profile.sid
             WHERE comments.pid = ?
             ORDER BY created_date DESC
-            LIMIT ? OFFSET ?`,
+            LIMIT ? OFFSET ?`, // OFFSET表示要跳過第幾條
             [pid, pageSize, offset]
         );
 
@@ -83,11 +83,13 @@ router.post("/add", async (req, res) => {
         [sid, pid]
     );
 
-    if (checkRows[0].count) {
+    const hasPurchased = checkRows[0].count > 0;
+
+    if (!hasPurchased) {
         return res.status(400).json({
             success: false,
-            message: "尚未購買此商品，無法評論"
-        })
+            message: "尚未購買過此商品，無法評論"
+        });
     }
 
     const sql =
