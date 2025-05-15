@@ -1,5 +1,5 @@
 {
-  "name": "mfee43-node",
+  "name": "petpet_shop",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -54,5 +54,9 @@
     "#middlewares/*": "./middlewares/*",
     "#services/*": "./services/*",
     "#utils/*": "./utils/*"
-  }
+  },
+  "engines": {
+    "node": "20.19.1"
+  },
+  "packageManager": "npm@10.8.2"
 }

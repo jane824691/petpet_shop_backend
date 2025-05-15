@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import upload from "./../utils/upload-imgs.js";
 import admin from './../utils/connect-firebase.js';
 import { v4 as uuidv4 } from "uuid";
+import tinify from "tinify";
+tinify.key = process.env.TINYPNG_API_KEY;
 
 const router = express.Router();
 
@@ -80,38 +82,44 @@ router.put("/edit", upload.single('photo'), async (req, res) => {
 
       // 如果有上傳圖片，處理圖片上傳到 Firebase Storage
       if (file) {
-          const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
-          const blobStream = blob.createWriteStream({
-              metadata: {
-                  contentType: file.mimetype,
-              }
-          });
-
-          // 處理上傳錯誤
-          blobStream.on('error', (err) => {
-              console.error(err);
-              return res.status(500).send('Unable to upload image.');
-          });
-
-          // 等待上傳完成
-          await new Promise((resolve, reject) => {
-              blobStream.on('finish', async () => {
-                  try {
-                      const [signedUrl] = await blob.getSignedUrl({
-                          action: 'read',
-                          expires: '03-09-2491'
-                      });
-                      fileUrl = signedUrl; // 獲取上傳後的圖片 URL
-                      resolve();
-                  } catch (error) {
-                      reject(error);
+          try {
+              // 壓縮圖片：使用 TinyPNG
+              const compressedBuffer = await tinify.fromBuffer(file.buffer).toBuffer();
+          
+              // 上傳壓縮後的圖片到 Firebase Storage
+              const blob = bucket.file(`images/${uuidv4()}.${file.originalname.split('.').pop()}`);
+              const blobStream = blob.createWriteStream({
+                  metadata: {
+                      contentType: file.mimetype,
                   }
               });
-              blobStream.end(file.buffer);
-          });
-
-          // 如果有新圖片，加入到 updatedFields
-          updatedFields.photo = fileUrl;
+            
+              // 上傳處理
+              await new Promise((resolve, reject) => {
+                  blobStream.on('error', reject);
+                  blobStream.on('finish', async () => {
+                      try {
+                          const [signedUrl] = await blob.getSignedUrl({
+                              action: 'read',
+                              expires: '03-09-2491'
+                          });
+                          fileUrl = signedUrl;
+                          resolve();
+                      } catch (error) {
+                          reject(error);
+                      }
+                  });
+                
+                  // 將壓縮後的圖片寫入 Firebase
+                  blobStream.end(compressedBuffer);
+              });
+            
+              updatedFields.photo = fileUrl;
+            
+          } catch (err) {
+              console.error("圖片壓縮或上傳錯誤:", err);
+              return res.status(500).json({ success: false, message: "圖片處理失敗", error: err.message });
+          }
       }
 
       // 如果沒有需要更新的欄位，直接返回成功
