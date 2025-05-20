@@ -3,11 +3,7 @@ import db from "../utils/connect-mysql.js";
 import upload from "../utils/upload-imgs.js";
 import dayjs from "dayjs";
 import ecpay_payment from 'ecpay_aio_nodejs';
-// import dotenv from "dotenv";
-// dotenv.config();
 
-// const HOST = process.env.HOST || 'http://localhost:3002';
-// const ecpay_payment = require('ecpay_aio_nodejs');
 const { MERCHANTID, HASHKEY, HASHIV, HOST } = process.env;
 const router = express.Router();
 
@@ -343,10 +339,6 @@ router.get("/payment/create/:oid", async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, message: "找不到訂單" })
     }
-    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // if (!order.order_email || typeof order.order_email !== 'string' || !emailRegex.test(order.order_email)) {
-    //   return res.status(400).json({ success: false, error: 'Email 欄位不存在或格式不正確' });
-    // }
 
     const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
       year: 'numeric',
@@ -368,26 +360,14 @@ router.get("/payment/create/:oid", async (req, res) => {
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
       ReturnURL: `${HOST}/return`,
-      ClientBackURL: `${HOST}/clientReturn`,
-      // Email: order.order_email.trim(),
-      // PaymentType: 'aio',
-      // ChoosePayment: 'ALL'
+      ClientBackURL: `${HOST}/clientReturn`
     };
-    console.log('base_param', base_param);
-    // console.log('order', order);
-    // console.log('order_email', order.order_email);
-    // console.log(typeof order.order_email)
     const create = new ecpay_payment(options);
 
     // 注意：在此事直接提供 html + js 直接觸發的範例，直接從前端觸發付款行為
     const html = create.payment_client.aio_check_out_all(base_param, {});
 
-    console.log('html', html);
-
-    res.render('index', {
-      title: 'Express',
-      html,
-    });
+    res.send(html);
 
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
