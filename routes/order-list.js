@@ -2,8 +2,34 @@ import express from "express";
 import db from "../utils/connect-mysql.js";
 import upload from "../utils/upload-imgs.js";
 import dayjs from "dayjs";
+import ecpay_payment from 'ecpay_aio_nodejs';
+// import dotenv from "dotenv";
+// dotenv.config();
 
+// const HOST = process.env.HOST || 'http://localhost:3002';
+// const ecpay_payment = require('ecpay_aio_nodejs');
+const { MERCHANTID, HASHKEY, HASHIV, HOST } = process.env;
 const router = express.Router();
+
+const options = {
+  OperationMode: 'Test', // Test or Production
+  MercProfile: {
+    MerchantID: MERCHANTID,
+    HashKey: HASHKEY,
+    HashIV: HASHIV,
+    MercProfile: 'Default'
+  },
+  IgnorePayment: [
+    //    "Credit",
+    //    "WebATM",
+    //    "ATM",
+    //    "CVS",
+    //    "BARCODE",
+    //    "AndroidPay"
+  ],
+  IsProjectContractor: false,
+};
+let TradeNo;
 
 router.use((req, res, next) => {
   const u = req.url.split("?")[0]; // 只要路徑
@@ -258,7 +284,7 @@ router.post("/add", upload.none(), async (req, res) => {
           message: `找不到商品 ID: ${pid[i]}`,
         });
       }
-      
+
       // 將插入值添加到數組中
       orderChildValues.push([
         insertedOrderId,
@@ -271,8 +297,8 @@ router.post("/add", upload.none(), async (req, res) => {
     // 批量插入數據到 order_child 表
     // product_price是商品價格, sale_price可能是活動折扣後入庫價格
     const sql2 =
-      "INSERT INTO `order_child`(`oid`, `pid`, `sale_price`, `actual_amount`) VALUES ?";      
-      
+      "INSERT INTO `order_child`(`oid`, `pid`, `sale_price`, `actual_amount`) VALUES ?";
+
     const [result2] = await db.query(sql2, [orderChildValues]);
 
     output.success = true;
@@ -302,6 +328,98 @@ router.get("/one/:oid", async (req, res) => {
   );
   if (rows.length) return res.json(rows); // 直接回傳所有資料
   else return res.json({});
+});
+
+router.get("/payment/create/:oid", async (req, res) => {
+  const oid = req.params.oid;
+
+  try {
+    // 撈訂單資訊
+    const [[order]] = await db.query(
+      "SELECT o.oid, o.total, o.order_name, o.order_email FROM order_list o WHERE o.oid = ?",
+      [oid]
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "找不到訂單" })
+    }
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (!order.order_email || typeof order.order_email !== 'string' || !emailRegex.test(order.order_email)) {
+    //   return res.status(400).json({ success: false, error: 'Email 欄位不存在或格式不正確' });
+    // }
+
+    const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    });
+    console.log('MerchantTradeDate', MerchantTradeDate);
+
+    TradeNo = 'test' + new Date().getTime();
+    let base_param = {
+      MerchantTradeNo: TradeNo, // 帶20碼uid, ex: f0a0d7e9fae1bb72bc93
+      MerchantTradeDate,
+      TotalAmount: order.total.toString(),
+      TradeDesc: '測試商品訂單',
+      ItemName: '測試商品等',
+      ReturnURL: `${HOST}/return`,
+      ClientBackURL: `${HOST}/clientReturn`,
+      // Email: order.order_email.trim(),
+      // PaymentType: 'aio',
+      // ChoosePayment: 'ALL'
+    };
+    console.log('base_param', base_param);
+    // console.log('order', order);
+    // console.log('order_email', order.order_email);
+    // console.log(typeof order.order_email)
+    const create = new ecpay_payment(options);
+
+    // 注意：在此事直接提供 html + js 直接觸發的範例，直接從前端觸發付款行為
+    const html = create.payment_client.aio_check_out_all(base_param, {});
+
+    console.log('html', html);
+
+    res.render('index', {
+      title: 'Express',
+      html,
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+})
+
+// 後端接收綠界回傳的資料
+router.post('/return', async (req, res) => {
+  console.log('req.body:', req.body);
+
+  const { CheckMacValue } = req.body;
+  const data = { ...req.body };
+  delete data.CheckMacValue; // 此段不驗證
+
+  const create = new ecpay_payment(options);
+  const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
+
+  console.log(
+    '確認交易正確性：',
+    CheckMacValue === checkValue,
+    CheckMacValue,
+    checkValue,
+  );
+
+  // 交易成功後，需要回傳 1|OK 給綠界
+  res.send('1|OK');
+});
+
+// 用戶交易完成後的轉址
+router.get('/clientReturn', (req, res) => {
+  console.log('clientReturn:', req.body, req.query);
+  res.render('return', { query: req.query });
 });
 
 export default router;
