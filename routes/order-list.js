@@ -350,7 +350,6 @@ router.get("/payment/create/:oid", async (req, res) => {
       hour12: false,
       timeZone: 'UTC',
     });
-    console.log('MerchantTradeDate', MerchantTradeDate);
 
     TradeNo = 'test' + new Date().getTime();
     let base_param = {
@@ -359,8 +358,8 @@ router.get("/payment/create/:oid", async (req, res) => {
       TotalAmount: order.total.toString(),
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
-      ReturnURL: `${HOST}/return`,
-      ClientBackURL: `${HOST}/clientReturn`
+      ReturnURL: `${HOST}/order-list/payment/return`,
+      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`
     };
     const create = new ecpay_payment(options);
 
@@ -375,7 +374,7 @@ router.get("/payment/create/:oid", async (req, res) => {
 })
 
 // 後端接收綠界回傳的資料
-router.post('/return', async (req, res) => {
+router.post('/payment/return', async (req, res) => {
   console.log('req.body:', req.body);
 
   const { CheckMacValue } = req.body;
