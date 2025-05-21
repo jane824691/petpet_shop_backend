@@ -359,7 +359,8 @@ router.get("/payment/create/:oid", async (req, res) => {
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
       ReturnURL: `${HOST}/order-list/payment/return`,
-      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`
+      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`,
+      CustomField1: String(oid),
     };
     const create = new ecpay_payment(options);
 
@@ -377,19 +378,29 @@ router.get("/payment/create/:oid", async (req, res) => {
 router.post('/payment/return', async (req, res) => {
   console.log('req.body:', req.body);
 
-  const { CheckMacValue } = req.body;
+  const { CheckMacValue, CustomField1 } = req.body;
   const data = { ...req.body };
   delete data.CheckMacValue; // 此段不驗證
 
   const create = new ecpay_payment(options);
   const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
+  const isValid = CheckMacValue === checkValue;
 
   console.log(
     '確認交易正確性：',
-    CheckMacValue === checkValue,
+    isValid,
     CheckMacValue,
     checkValue,
   );
+
+  if (isValid && req.body.RtnCode === '1') {
+    const oid = CustomField1;
+    // 更新訂單付款狀態為已付款
+    // order_status: 0 = no pay, 1 = paid
+    const updatePaymentStatus =
+      "UPDATE `order_list` SET `order_status` = 1 WHERE `oid` = ?";
+    await db.query(updatePaymentStatus, [oid]);
+  }
 
   // 交易成功後，需要回傳 1|OK 給綠界
   res.send('1|OK');
