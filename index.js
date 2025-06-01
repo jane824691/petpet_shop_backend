@@ -15,7 +15,6 @@ import { fileURLToPath, pathToFileURL } from "url";
 //const upload = multer({ dest: "tmp_uploads/" }); 暫存區
 import db from "./utils/connect-mysql.js";
 import registerListRouter from "./routes/register-list.js";
-import admin2Router from "./routes/admin2.js";
 import couponListRouter from "./routes/coupon-list.js";
 import couponListUseRouter from "./routes/coupon-list.js";
 //新增&讀取資料
@@ -96,7 +95,6 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use("/register-list", registerListRouter);
-app.use("/admins", admin2Router);
 app.use("/product", productRouter);
 app.use("/comments", commentsRouter);
 app.use("/order-list", orderListRouter);
@@ -192,29 +190,6 @@ app.get("/logout", async (req, res) => {
   res.redirect("/");
 });
 
-// http://localhost:3002/try-jwt1 可以拿到token
-// 重新載入後會再包含iat(建立token時間點)，所以token會變
-app.get("/try-jwt1", async (req, res) => {
-  // jwt 加密
-  // 第二個參數是加密的key(JWT_SECRET)
-  const token = jwt.sign(
-    { sid: 1, account: "LittleHao" },
-    process.env.JWT_SECRET
-  );
-
-  res.json({ token });
-});
-
-// http://localhost:3002/try-jwt2 可以拿到解密的資料
-app.get("/try-jwt2", async (req, res) => {
-  // jwt 解密
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOjEsImFjY291bnQiOiJMaXR0bGVIYW8iLCJpYXQiOjE3MDQ2OTkxNzZ9.rNFOzTQVmB7O-KHEES9aof6F468ki_pl4omUiouvz3g";
-
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
-  res.json({ payload });
-});
-
 app.post("/login-jwt", async (req, res) => {
   const output = {
     success: false,
@@ -224,6 +199,7 @@ app.post("/login-jwt", async (req, res) => {
     account: "",
     token: "",
   };
+  // 比對資料表
   if (!req.body.account || !req.body.password) {
     // 資料不足
     output.code = 410;
@@ -301,7 +277,7 @@ app.get("/check", async (req, res) => {
   res.json(output);
 });
 
-//把token傳過來
+// 教學
 app.get("/register-all", async (req, res) => {
   //res.locals.jwt: {id, account}
   const output = {
