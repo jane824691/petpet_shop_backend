@@ -326,19 +326,71 @@ router.get("/one/:oid", async (req, res) => {
   else return res.json({});
 });
 
+// router.get("/payment/create/:oid", async (req, res) => {
+//   const oid = req.params.oid;
+
+//   try {
+//     // 撈訂單資訊
+//     const [[order]] = await db.query(
+//       "SELECT o.oid, o.total, o.order_name, o.order_email FROM order_list o WHERE o.oid = ?",
+//       [oid]
+//     );
+
+//     if (!order) {
+//       return res.status(404).json({ success: false, message: "找不到訂單" })
+//     }
+
+//     const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
+//       year: 'numeric',
+//       month: '2-digit',
+//       day: '2-digit',
+//       hour: '2-digit',
+//       minute: '2-digit',
+//       second: '2-digit',
+//       hour12: false,
+//       timeZone: 'UTC',
+//     });
+
+//     TradeNo = 'test' + new Date().getTime();
+//     let base_param = {
+//       MerchantTradeNo: TradeNo, // 帶20碼uid, ex: f0a0d7e9fae1bb72bc93
+//       MerchantTradeDate,
+//       TotalAmount: order.total.toString(),
+//       TradeDesc: '測試商品訂單',
+//       ItemName: '測試商品等',
+//       ReturnURL: `${HOST}/order-list/payment/return`,
+//       ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`,
+//       CustomField1: String(oid),
+//     };
+//     const create = new ecpay_payment(options);
+
+//     // 注意：在此事直接提供 html + js 直接觸發的範例，直接從前端觸發付款行為
+//     const html = create.payment_client.aio_check_out_all(base_param, {});
+
+//     res.send(html);
+
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// })
+
+// 後端接收綠界回傳的資料
+
 router.get("/payment/create/:oid", async (req, res) => {
   const oid = req.params.oid;
 
   try {
-    // 撈訂單資訊
     const [[order]] = await db.query(
       "SELECT o.oid, o.total, o.order_name, o.order_email FROM order_list o WHERE o.oid = ?",
       [oid]
     );
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "找不到訂單" })
+      return res.status(404).json({ success: false, message: "找不到訂單" });
     }
+
+    // 動態引入, 使用該api才引入
+    const { default: ecpay_payment } = await import('ecpay_aio_nodejs');
 
     const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
       year: 'numeric',
@@ -351,9 +403,10 @@ router.get("/payment/create/:oid", async (req, res) => {
       timeZone: 'UTC',
     });
 
-    TradeNo = 'test' + new Date().getTime();
+    const TradeNo = 'test' + new Date().getTime();
+
     let base_param = {
-      MerchantTradeNo: TradeNo, // 帶20碼uid, ex: f0a0d7e9fae1bb72bc93
+      MerchantTradeNo: TradeNo,
       MerchantTradeDate,
       TotalAmount: order.total.toString(),
       TradeDesc: '測試商品訂單',
@@ -362,19 +415,17 @@ router.get("/payment/create/:oid", async (req, res) => {
       ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`,
       CustomField1: String(oid),
     };
+
     const create = new ecpay_payment(options);
 
-    // 注意：在此事直接提供 html + js 直接觸發的範例，直接從前端觸發付款行為
     const html = create.payment_client.aio_check_out_all(base_param, {});
-
     res.send(html);
 
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
-})
+});
 
-// 後端接收綠界回傳的資料
 router.post('/payment/return', async (req, res) => {
   console.log('req.body:', req.body);
 
