@@ -1,8 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import session from "express-session";
-import dayjs from "dayjs";
-import moment from "moment-timezone";
 import cors from "cors";
 import mysql_session from "express-mysql-session";
 import bcrypt from "bcryptjs";
@@ -33,7 +31,7 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

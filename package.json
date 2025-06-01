@@ -1,5 +1,5 @@
 {
-  "name": "mfee43-node",
+  "name": "petpet_shop",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.11.10",
     "dotenv": "^16.3.1",
+    "ecpay_aio_nodejs": "^1.2.2",
     "ejs": "^3.1.9",
     "esbuild": "^0.21.1",
     "express": "^4.18.2",
@@ -54,5 +55,9 @@
     "#middlewares/*": "./middlewares/*",
     "#services/*": "./services/*",
     "#utils/*": "./utils/*"
-  }
+  },
+  "engines": {
+    "node": "20.19.1"
+  },
+  "packageManager": "npm@10.8.2"
 }

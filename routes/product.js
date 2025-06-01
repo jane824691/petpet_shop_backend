@@ -134,7 +134,7 @@ router.get("/one/:pid", async (req, res) => {
 router.get("/recommend", async (req, res) => {
   const [rows] = await db.query(
     "SELECT * FROM product WHERE sales_condition != '已下架' ORDER BY RAND() LIMIT 4");
-    console.log('recommend data:', rows);
+
   if (rows.length) return res.json(rows);
   else return res.json({});
 });
