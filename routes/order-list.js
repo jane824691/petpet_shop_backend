@@ -3,6 +3,7 @@ import db from "../utils/connect-mysql.js";
 import upload from "../utils/upload-imgs.js";
 import dayjs from "dayjs";
 import ecpay_payment from 'ecpay_aio_nodejs';
+import jwt from "jsonwebtoken";
 
 const { MERCHANTID, HASHKEY, HASHIV, HOST } = process.env;
 const router = express.Router();
@@ -130,6 +131,7 @@ router.get("/api", async (req, res) => {
   */
 });
 
+// 取得某會員底下所有訂單
 router.get("/person/:sid", async (req, res) => {
   try {
     let sid = req.params.sid || 1; // 使用 req.params.sid 來獲取路徑參數
@@ -162,6 +164,54 @@ router.get("/person/:sid", async (req, res) => {
     // 提示錯誤信息
     res.status(500).json(output);
   }
+});
+
+// 取得個人某筆訂單資訊
+router.post("/one/:oid", async (req, res) => {
+  let oid = +req.params.oid;
+  if (isNaN(oid)) {
+    return res.status(400).json({ success: false, message: "訂單編號錯誤" });
+  }
+
+  let token = req.body.token;
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: "沒有授權，不能取得資料" })
+  }
+  try {
+    // 驗證並解碼 token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // 將解碼的資訊存入 res.locals，供後續使用
+    res.locals.jwt = decoded;
+
+    if (res.locals.jwt?.sid) {
+      let sid = res.locals.jwt.sid
+
+      // 查詢這筆訂單是否屬於該會員
+      const [rows] = await db.query(
+        `SELECT DISTINCT o.sid, o.order_name, o.total, o.order_phone, o.order_email,
+              o.shipping_zipcode, o.shipping_address, o.pay_way,
+              p.pid, p.product_name, p.product_img, c.sale_price, c.actual_amount
+        FROM order_list o
+        INNER JOIN order_child c ON c.oid = o.oid
+        INNER JOIN product p ON p.pid = c.pid
+        WHERE o.oid = ? AND o.sid = ?`,
+        [oid, sid]
+      );
+
+      if (rows.length) {
+        return res.json(rows);
+      } else {
+        return res.status(403).json({ success: false, message: "查無此訂單或無權限" });
+      }
+    }
+
+  } catch (error) {
+    // 如果 token 驗證失敗或發生其他錯誤，返回沒有授權
+    return res.status(401).json({ success: false, error: "無效的 Token", details: error.message });
+
+  }
+
 });
 
 router.post("/add", upload.none(), async (req, res) => {
@@ -313,75 +363,13 @@ router.post("/add", upload.none(), async (req, res) => {
   res.json(output);
 });
 
-router.get("/one/:oid", async (req, res) => {
-  let oid = +req.params.oid || 1;
-  const [rows, fields] = await db.query(
-    `SELECT DISTINCT o.sid, o.order_name, o.total, o.order_phone, o.order_email, o.shipping_zipcode, o.shipping_address, o.pay_way, p.pid, p.product_name, p.product_img, c.sale_price, c.actual_amount
-    FROM order_list o
-    INNER JOIN order_child c ON c.oid = o.oid
-    INNER JOIN product p ON p.pid = c.pid
-    WHERE o.oid IN (SELECT oid FROM order_child) AND o.oid = ${oid};`
-  );
-  if (rows.length) return res.json(rows); // 直接回傳所有資料
-  else return res.json({});
-});
-
-// router.get("/payment/create/:oid", async (req, res) => {
-//   const oid = req.params.oid;
-
-//   try {
-//     // 撈訂單資訊
-//     const [[order]] = await db.query(
-//       "SELECT o.oid, o.total, o.order_name, o.order_email FROM order_list o WHERE o.oid = ?",
-//       [oid]
-//     );
-
-//     if (!order) {
-//       return res.status(404).json({ success: false, message: "找不到訂單" })
-//     }
-
-//     const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
-//       year: 'numeric',
-//       month: '2-digit',
-//       day: '2-digit',
-//       hour: '2-digit',
-//       minute: '2-digit',
-//       second: '2-digit',
-//       hour12: false,
-//       timeZone: 'UTC',
-//     });
-
-//     TradeNo = 'test' + new Date().getTime();
-//     let base_param = {
-//       MerchantTradeNo: TradeNo, // 帶20碼uid, ex: f0a0d7e9fae1bb72bc93
-//       MerchantTradeDate,
-//       TotalAmount: order.total.toString(),
-//       TradeDesc: '測試商品訂單',
-//       ItemName: '測試商品等',
-//       ReturnURL: `${HOST}/order-list/payment/return`,
-//       ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`,
-//       CustomField1: String(oid),
-//     };
-//     const create = new ecpay_payment(options);
-
-//     // 注意：在此事直接提供 html + js 直接觸發的範例，直接從前端觸發付款行為
-//     const html = create.payment_client.aio_check_out_all(base_param, {});
-
-//     res.send(html);
-
-//   } catch (error) {
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// })
-
 // 後端接收綠界回傳的資料
-
 router.get("/payment/create/:oid", async (req, res) => {
   const oid = req.params.oid;
 
   try {
     const [[order]] = await db.query(
-      "SELECT o.oid, o.total, o.order_name, o.order_email FROM order_list o WHERE o.oid = ?",
+      "SELECT o.oid, o.total FROM order_list o WHERE o.oid = ?",
       [oid]
     );
 
@@ -446,21 +434,16 @@ router.post('/payment/return', async (req, res) => {
 
   if (isValid && req.body.RtnCode === '1') {
     const oid = CustomField1;
-    // 更新訂單付款狀態為已付款
+    // 交易成功後, 更新訂單付款狀態為已付款
     // order_status: 0 = no pay, 1 = paid
     const updatePaymentStatus =
       "UPDATE `order_list` SET `order_status` = 1 WHERE `oid` = ?";
     await db.query(updatePaymentStatus, [oid]);
   }
 
-  // 交易成功後，需要回傳 1|OK 給綠界
+  // 交易成功後, 需要回傳 1|OK 給綠界
   res.send('1|OK');
 });
 
-// 用戶交易完成後的轉址
-router.get('/clientReturn', (req, res) => {
-  console.log('clientReturn:', req.body, req.query);
-  res.render('return', { query: req.query });
-});
 
 export default router;
