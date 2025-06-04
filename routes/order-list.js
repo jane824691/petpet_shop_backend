@@ -135,23 +135,51 @@ router.get("/api", async (req, res) => {
 router.get("/person/:sid", async (req, res) => {
   try {
     let sid = req.params.sid || 1; // 使用 req.params.sid 來獲取路徑參數
-    const [rows, fields] = await db.query(
+    let page = parseInt(req.query.page) || 1;
+    let perPage = 5;
+    let where = `WHERE sid=${sid}`;
+    let totalRows = 0;
+    let totalPages = 1;
+    let [rows, fields] = await db.query(
       `SELECT * FROM order_list WHERE sid=${sid} ORDER BY oid DESC`
     );
 
     let output = {
-      success: true,
+      success: false,
       page: 1,
-      perPage: 6,
-      rows: rows,
-      totalRows: rows.length,
+      perPage: 5,
+      rows,
+      totalRows,
       totalPages: 1,
       qs: {},
       redirect: "",
       info: "",
     };
 
-    res.json(output);
+    if (page < 1) {
+      output.redirect = `?page=1`;
+      output.info = `頁碼值小於 1`;
+      return output;
+    }
+
+    const t_sql = `SELECT COUNT(1) totalRows FROM order_list ${where}`;
+    [[{ totalRows }]] = await db.query(t_sql);
+    totalPages = Math.ceil(totalRows / perPage);
+    if (totalRows > 0) {
+      if (page > totalPages) {
+        output.redirect = `?page=${totalPages}`;
+        output.info = `頁碼值大於總頁數`;
+        return { ...output, totalRows, totalPages };
+      }
+
+      const sql = `SELECT * FROM order_list ${where} ORDER BY oid DESC 
+    LIMIT ${(page - 1) * perPage}, ${perPage}`;
+      [rows] = await db.query(sql);
+      output = { ...output, success: true, rows, totalRows, totalPages };
+    }
+
+    return res.json(output);
+
   } catch (ex) {
     // 如有異常則跳出以下提示
     const output = {
@@ -400,7 +428,7 @@ router.get("/payment/create/:oid", async (req, res) => {
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
       ReturnURL: `${HOST}/order-list/payment/return`,
-      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentSuccess`,
+      OrderResultURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
       CustomField1: String(oid),
     };
 
