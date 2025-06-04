@@ -218,7 +218,7 @@ router.post("/one/:oid", async (req, res) => {
       // 查詢這筆訂單是否屬於該會員
       const [rows] = await db.query(
         `SELECT DISTINCT o.sid, o.order_name, o.total, o.order_phone, o.order_email,
-              o.shipping_zipcode, o.shipping_address, o.pay_way,
+              o.shipping_zipcode, o.shipping_address, o.pay_way, o.coupon_detail_id, o.discount,
               p.pid, p.product_name, p.product_img, c.sale_price, c.actual_amount
         FROM order_list o
         INNER JOIN order_child c ON c.oid = o.oid
