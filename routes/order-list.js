@@ -217,12 +217,17 @@ router.post("/one/:oid", async (req, res) => {
 
       // 查詢這筆訂單是否屬於該會員
       const [rows] = await db.query(
-        `SELECT DISTINCT o.sid, o.order_name, o.total, o.order_phone, o.order_email,
-              o.shipping_zipcode, o.shipping_address, o.pay_way, o.coupon_detail_id, o.discount,
-              p.pid, p.product_name, p.product_img, c.sale_price, c.actual_amount
+        `SELECT DISTINCT
+          o.sid, o.order_name, o.total, o.order_phone, o.order_email,
+          o.shipping_zipcode, o.shipping_address, o.pay_way,
+          cu.coupon_id, c.discount_coins,
+          p.pid, p.product_name, p.product_img,
+          oc.sale_price, oc.actual_amount
         FROM order_list o
-        INNER JOIN order_child c ON c.oid = o.oid
-        INNER JOIN product p ON p.pid = c.pid
+        INNER JOIN order_child oc ON oc.oid = o.oid
+        INNER JOIN product p ON p.pid = oc.pid
+        LEFT JOIN coupon_use cu ON cu.coupon_detail_id = o.coupon_detail_id
+        LEFT JOIN coupon c ON c.coupon_id = cu.coupon_id
         WHERE o.oid = ? AND o.sid = ?`,
         [oid, sid]
       );
@@ -297,51 +302,55 @@ router.post("/add", upload.none(), async (req, res) => {
 
     // 如果有傳入 coupon_id，則查詢優惠券資訊
     let discountAmount = 0;
+    let couponDetailId = null;
+    // 若有 coupon_id，查 coupon_use 取得 coupon_detail_id
     if (coupon_id) {
-      const [coupon] = await db.query(
+      const [couponUseRows] = await db.query(
+        "SELECT coupon_detail_id FROM coupon_use WHERE coupon_id = ? AND sid = ? AND coupon_status = 0",
+        [coupon_id, sid]
+      );
+
+      if (couponUseRows.length === 0) {
+        return res.status(400).json({ success: false, message: "無效的優惠券或已使用" });
+      }
+
+      couponDetailId = couponUseRows[0].coupon_detail_id;
+
+      // 查 coupon 表取得折扣金額
+      const [couponRows] = await db.query(
         "SELECT discount_coins FROM coupon WHERE coupon_id = ? AND coupon_status = 0",
         [coupon_id]
       );
 
-      // 如果優惠券不存在或已使用，回傳錯誤
-      if (coupon.length === 0) {
-        return res
-          .status(400)
-          .json({ success: false, message: "無效的優惠券或優惠券已使用" });
+      if (couponRows.length === 0) {
+        return res.status(400).json({ success: false, message: "優惠券無效或已被使用" });
       }
 
-      // 更新優惠券table狀態為已使用
-      // coupon_status: 0 = init, 1 = used, 2 = expired
-      const updateCouponSql =
-        "UPDATE `coupon` SET `coupon_status` = 1 WHERE `coupon_id` = ?";
-      await db.query(updateCouponSql, [coupon_id]);
-      const updateCouponUseSql =
-        "UPDATE coupon_use SET `coupon_status` = 1 WHERE `coupon_id` = ?";
-      await db.query(updateCouponUseSql, [coupon_id]);
+      discountAmount = Number(couponRows[0].discount_coins);
 
-      // 計算折扣後金額
-      discountAmount = Number(coupon[0].discount_coins); // [ { discount_coins: 50 } ]
+      // 更新 coupon 和 coupon_use 狀態為已使用
+      await db.query("UPDATE coupon SET coupon_status = 1 WHERE coupon_id = ?", [coupon_id]);
+      await db.query("UPDATE coupon_use SET coupon_status = 1 WHERE coupon_detail_id = ?", [couponDetailId]);
     }
-
     // 購物車金額 - 折扣 + 假運費(寫死) = 帳單總金額
     const shippingFee = 30;
     const finalPrice = Math.max(Number(netTotal) - Number(discountAmount) + shippingFee, 0);
 
     // 插入訂單對應db欄位
     const sql1 =
-      "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW())";
+      "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`, `coupon_detail_id`, `discount_coins`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW(), ? , ?)";
 
     const [result1] = await db.query(sql1, [
       name,
       sid,
       phone,
       email,
-      finalPrice, // 插入計算後的金額
+      finalPrice,
       pay_way,
       postcode,
       address,
-      pid,
-      actual_amount,
+      couponDetailId,
+      discountAmount,
     ]);
 
     // 準備同時生成第2張表order_child + 同一筆oid對很多商品
