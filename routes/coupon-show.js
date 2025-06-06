@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
   // 查詢時for迴圈找尋比對當前時間, 同時更新已逾期的資料庫優惠券狀態欄位
   const currentTime = new Date();
   for (let coupon of rows) {
-    if (currentTime > new Date(coupon.expiry_date)) {
+    if (coupon.coupon_status === 0 && currentTime > new Date(coupon.expiry_date)) {
        // 更新 coupon 表的狀態
       await db.query(
         'UPDATE coupon SET coupon_status = ? WHERE coupon_id = ?',
