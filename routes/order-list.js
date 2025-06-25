@@ -436,7 +436,7 @@ router.get("/payment/create/:oid", async (req, res) => {
       TotalAmount: order.total.toString(),
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
-      ReturnURL: `${HOST}/order-list/payment/return`,
+      ReturnURL: `${HOST}/order-list/payment/return`, // real outcome to backend
       OrderResultURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
       CustomField1: String(oid),
     };
@@ -469,18 +469,34 @@ router.post('/payment/return', async (req, res) => {
     checkValue,
   );
 
-  if (isValid && req.body.RtnCode === '1') {
+  // order_status: 0 = not yet pay
+  if (isValid) {
     const oid = CustomField1;
-    // 交易成功後, 更新訂單付款狀態為已付款
-    // order_status: 0 = no pay, 1 = paid
-    const updatePaymentStatus =
-      "UPDATE `order_list` SET `order_status` = 1 WHERE `oid` = ?";
-    await db.query(updatePaymentStatus, [oid]);
+    if (RtnCode === '1') {
+      // success：order_status = 1
+      const updatePaymentStatus =
+        "UPDATE `order_list` SET `order_status` = 1 WHERE `oid` = ?";
+      await db.query(updatePaymentStatus, [oid]);
+    } else {
+      // failed：order_status = 2
+      const updatePaymentStatus =
+        "UPDATE `order_list` SET `order_status` = 2 WHERE `oid` = ?";
+      await db.query(updatePaymentStatus, [oid]);
+    }
   }
 
-  // 交易成功後, 需要回傳 1|OK 給綠界
+
+  // 交易不管成功與否, 需回傳 1|OK 給綠界表示有收到資料
   res.send('1|OK');
 });
 
+// RtnCode - 綠界: 
+// 10300066：「交易付款結果待確認中，請勿出貨」，請至廠商管理後台確認已付款完成再出貨。
+// 10100248：「拒絕交易，請客戶聯繫發卡行確認原因」
+// 10100252：「額度不足，請客戶檢查卡片額度或餘額」
+// 10100254：「交易失敗，請客戶聯繫發卡行確認交易限制」
+// 10100251：「卡片過期，請客戶檢查卡片重新交易」
+// 10100255：「報失卡，請客戶更換卡片重新交易」
+// 10100256：「被盜用卡，請客戶更換卡片重新交易」
 
 export default router;
