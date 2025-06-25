@@ -219,7 +219,7 @@ router.post("/one/:oid", async (req, res) => {
       const [rows] = await db.query(
         `SELECT DISTINCT
           o.sid, o.order_name, o.total, o.order_phone, o.order_email,
-          o.shipping_zipcode, o.shipping_address, o.pay_way,
+          o.shipping_zipcode, o.shipping_address, o.pay_way, o.order_status,
           cu.coupon_id, c.discount_coins,
           p.pid, p.product_name, p.product_img,
           oc.sale_price, oc.actual_amount
