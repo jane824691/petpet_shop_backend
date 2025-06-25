@@ -454,7 +454,7 @@ router.get("/payment/create/:oid", async (req, res) => {
 router.post('/payment/return', async (req, res) => {
   console.log('req.body:', req.body);
 
-  const { CheckMacValue, CustomField1 } = req.body;
+  const { CheckMacValue, CustomField1, RtnCode } = req.body;
   const data = { ...req.body };
   delete data.CheckMacValue; // 此段不驗證
 
