@@ -437,6 +437,7 @@ router.get("/payment/create/:oid", async (req, res) => {
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
       ReturnURL: `${HOST}/order-list/payment/return`, // real outcome to backend
+      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
       OrderResultURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
       CustomField1: String(oid),
     };
