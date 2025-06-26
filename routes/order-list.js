@@ -146,8 +146,8 @@ router.get("/person/:sid", async (req, res) => {
 
     let output = {
       success: false,
-      page: 1,
-      perPage: 5,
+      page,
+      perPage,
       rows,
       totalRows,
       totalPages: 1,
