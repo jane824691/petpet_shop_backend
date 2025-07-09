@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "unauthorized": "沒有授權，不能取得資料",
+    "notFound": "找不到資料",
+    "invalidPage": "頁碼值小於 1",
+    "pageExceeded": "頁碼值大於總頁數"
+  },
+  "status": {
+    "success": "成功",
+    "failed": "失敗"
+  }
+} 

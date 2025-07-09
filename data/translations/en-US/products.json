@@ -1,0 +1,23 @@
+{
+  "product": {
+    "name": "Product Name",
+    "description": "Product Description",
+    "price": "Price",
+    "category": "Category",
+    "status": "Status",
+    "sales_condition": {
+      "available": "Available",
+      "sold_out": "Sold Out",
+      "discontinued": "Discontinued"
+    }
+  },
+  "filters": {
+    "sortBy": {
+      "cheap": "Price: Low to High",
+      "expensive": "Price: High to Low",
+      "newest": "Newest First"
+    },
+    "priceRange": "Price Range",
+    "search": "Search Products"
+  }
+} 

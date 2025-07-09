@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "unauthorized": "Unauthorized, cannot access data",
+    "notFound": "Data not found",
+    "invalidPage": "Page number is less than 1",
+    "pageExceeded": "Page number exceeds total pages"
+  },
+  "status": {
+    "success": "Success",
+    "failed": "Failed"
+  }
+} 

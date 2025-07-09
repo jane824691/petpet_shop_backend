@@ -1,0 +1,23 @@
+{
+  "product": {
+    "name": "商品名稱",
+    "description": "商品描述",
+    "price": "價格",
+    "category": "分類",
+    "status": "狀態",
+    "sales_condition": {
+      "available": "可購買",
+      "sold_out": "已售完",
+      "discontinued": "已下架"
+    }
+  },
+  "filters": {
+    "sortBy": {
+      "cheap": "價格由低到高",
+      "expensive": "價格由高到低",
+      "newest": "最新上架"
+    },
+    "priceRange": "價格區間",
+    "search": "搜尋商品"
+  }
+} 

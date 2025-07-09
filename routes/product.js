@@ -1,9 +1,12 @@
 import express from "express";
 import db from "../utils/connect-mysql.js";
-import upload from "../utils/upload-imgs.js";
-import dayjs from "dayjs";
+import { languageMiddleware } from "../utils/i18n.js";
+import { localizeProducts, localizeProduct, buildSearchCondition } from "../utils/product-i18n.js";
 
 const router = express.Router();
+
+// 使用語言中間件
+router.use(languageMiddleware);
 
 router.use((req, res, next) => {
   const u = req.url.split("?")[0]; // 只要路徑
@@ -26,7 +29,9 @@ const getListData = async (req) => {
     req.query.searchWord && typeof req.query.searchWord === "string"
       ? req.query.searchWord.trim()
       : "";
-  let searchWord_ = db.escape(`%${searchWord}%`);
+  
+  // 獲取語言設定
+  const language = req.language || 'zh-TW';
 
   let qs = {}; // 用來把 query string 的設定傳給 template
   let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
@@ -34,11 +39,11 @@ const getListData = async (req) => {
   let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; // 價格排序方式
   let tag = req.query.tag ? req.query.tag.trim() : ""; // 價格排序方式
 
-  // 查關鍵字對應api
+  // 查關鍵字對應api - 支援多語言搜尋
   let where = ` WHERE 1 `;
   if (searchWord) {
     qs.searchWord = searchWord;
-    where += ` AND ( \`product_name\` LIKE ${searchWord_} )`;
+    where += buildSearchCondition(searchWord, language);
   }
   // 查價格區間
   if (priceLow) {
@@ -84,7 +89,7 @@ const getListData = async (req) => {
 
   if (page < 1) {
     output.redirect = `?page=1`;
-    output.info = `頁碼值小於 1`;
+    output.info = req.t('errors.invalidPage');
     return output;
   }
 
@@ -94,7 +99,7 @@ const getListData = async (req) => {
   if (totalRows > 0) {
     if (page > totalPages) {
       output.redirect = `?page=${totalPages}`;
-      output.info = `頁碼值大於總頁數`;
+      output.info = req.t('errors.pageExceeded');
       return { ...output, totalRows, totalPages };
     }
 
@@ -104,7 +109,11 @@ const getListData = async (req) => {
     const sql = `SELECT * FROM product ${where} ${priceSortClause} 
     LIMIT ${(page - 1) * perPage}, ${perPage}`;
     [rows] = await db.query(sql);
-    output = { ...output, success: true, rows, totalRows, totalPages };
+    
+    // 對商品資料進行國際化處理
+    const localizedRows = localizeProducts(rows, language);
+    
+    output = { ...output, success: true, rows: localizedRows, totalRows, totalPages };
   }
 
   return output;
@@ -123,21 +132,63 @@ router.get("/api", async (req, res) => {
 
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
+  const language = req.language || 'zh-TW';
+  
   const [rows, fields] = await db.query(
     `SELECT DISTINCT product.*, product_mutiple_img.photo_content_main, product_mutiple_img.photo_content_secondary, product_mutiple_img.photo_content FROM product LEFT JOIN product_mutiple_img ON product.pid = product_mutiple_img.pid WHERE product.pid = ${pid};`
   );
-  if (rows.length) return res.json(rows[0]);
-  else return res.json({});
+  
+  if (rows.length) {
+    const localizedProduct = localizeProduct(rows[0], language);
+    return res.json(localizedProduct);
+  } else {
+    return res.json({});
+  }
 });
 
 
 router.get("/recommend", async (req, res) => {
+  const language = req.language || 'zh-TW';
+  
   const [rows] = await db.query(
     "SELECT * FROM product WHERE sales_condition != '已下架' ORDER BY RAND() LIMIT 4");
 
-  if (rows.length) return res.json(rows);
-  else return res.json({});
+  if (rows.length) {
+    const localizedRows = localizeProducts(rows, language);
+    return res.json(localizedRows);
+  } else {
+    return res.json({});
+  }
 });
 
+
+// 測試國際化功能的端點
+router.get("/test-i18n", async (req, res) => {
+  const language = req.language || 'zh-TW';
+  
+  // 測試翻譯功能
+  const testData = {
+    language: language,
+    translations: {
+      error: req.t('errors.unauthorized'),
+      status: req.t('status.success'),
+      productName: req.t('product.name'),
+      sortCheap: req.t('filters.sortBy.cheap')
+    },
+    sampleProduct: {
+      pid: 1,
+      product_name: "測試商品",
+      product_name_en: "Test Product",
+      product_description: "這是測試商品描述",
+      product_description_en: "This is a test product description",
+      sales_condition: "可購買"
+    }
+  };
+  
+  // 對範例商品進行國際化處理
+  testData.localizedProduct = localizeProduct(testData.sampleProduct, language);
+  
+  res.json(testData);
+});
 
 export default router;
