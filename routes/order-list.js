@@ -218,8 +218,8 @@ router.post("/one/:oid", async (req, res) => {
       // 查詢這筆訂單是否屬於該會員
       const [rows] = await db.query(
         `SELECT DISTINCT
-          o.sid, o.order_name, o.total, o.order_phone, o.order_email,
-          o.shipping_zipcode, o.shipping_address, o.pay_way, o.order_status,
+          o.sid, o.order_name, o.order_name_en, o.total, o.order_phone, o.order_email,
+          o.shipping_zipcode, o.shipping_address, o.shipping_address_en, o.pay_way, o.order_status,
           cu.coupon_id, c.discount_coins,
           p.pid, p.product_name, p.product_img,
           oc.sale_price, oc.actual_amount
@@ -256,12 +256,14 @@ router.post("/add", upload.none(), async (req, res) => {
   // 準備存進第一張order_list, name是前端定義接收的名字
   const {
     name,
+    name_en,
     sid,
     phone,
     email,
     pay_way,
     postcode,
-    address,
+    address,        // 中文地址
+    address_en,     // 英文地址（新增，非必填）
     coupon_id,
     pid, // pid 是一個陣列
     actual_amount, // actual_amount 也是一個陣列
@@ -338,17 +340,19 @@ router.post("/add", upload.none(), async (req, res) => {
 
     // 插入訂單對應db欄位
     const sql1 =
-      "INSERT INTO `order_list`(`order_name`, `sid`, `order_phone`, `order_email`, `total`, `order_status`, `pay_way`, `shipping_zipcode`, `shipping_address`, `delivery_way`, `delivery_status`, `order_date`, `coupon_detail_id`, `discount_coins`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, '宅配', '出貨中', NOW(), ? , ?)";
+      "INSERT INTO `order_list`(`order_name`, `order_name_en`, `sid`, `order_phone`, `order_email`, `order_status`, `total`, `pay_way`, `shipping_zipcode`, `shipping_address`, `shipping_address_en`, `delivery_way`, `delivery_status`, `order_date`, `coupon_detail_id`, `discount_coins`) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, '宅配', '出貨中', NOW(), ? , ?)";
 
     const [result1] = await db.query(sql1, [
       name,
+      name_en || '',
       sid,
       phone,
       email,
-      finalPrice,
+      finalPrice, // 這裡要對應 total
       pay_way,
       postcode,
       address,
+      address_en || '',
       couponDetailId,
       discountAmount,
     ]);
