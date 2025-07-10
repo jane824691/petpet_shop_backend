@@ -221,7 +221,7 @@ router.post("/one/:oid", async (req, res) => {
           o.sid, o.order_name, o.order_name_en, o.total, o.order_phone, o.order_email,
           o.shipping_zipcode, o.shipping_address, o.shipping_address_en, o.pay_way, o.order_status,
           cu.coupon_id, c.discount_coins,
-          p.pid, p.product_name, p.product_img,
+          p.pid, p.product_name, p.product_name_en, p.product_img,
           oc.sale_price, oc.actual_amount
         FROM order_list o
         INNER JOIN order_child oc ON oc.oid = o.oid
