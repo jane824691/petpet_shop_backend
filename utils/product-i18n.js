@@ -1,49 +1,34 @@
 import { getTranslation } from './i18n.js';
 
 /**
- * 根據語言設定處理商品資料的國際化
+ * 處理商品資料，回傳包含中英文雙語的完整資訊
  * @param {Array} products - 商品陣列
- * @param {string} language - 語言代碼 ('zh-TW' 或 'en-US')
  * @returns {Array} 處理後的商品陣列
  */
-export const localizeProducts = (products, language = 'zh-TW') => {
+export const localizeProducts = (products) => {
   if (!Array.isArray(products)) {
     return products;
   }
 
-  return products.map(product => localizeProduct(product, language));
+  return products.map(product => localizeProduct(product));
 };
 
 /**
- * 處理單一商品的國際化
- * @param {Object} product
- * @param {string} language
- * @returns {Object}
+ * 處理單一商品資料，回傳包含中英文雙語的完整資訊
+ * @param {Object} product - 商品物件
+ * @returns {Object} 處理後的商品物件
  */
-export const localizeProduct = (product, language = 'zh-TW') => {
+export const localizeProduct = (product) => {
   if (!product) return product;
+  
   const localizedProduct = { ...product };
-
-  if (language === 'en-US') {
-    // 英文優先，沒有時 fallback 中文
-    localizedProduct.product_name = product.product_name_en || product.product_name;
-    localizedProduct.product_description = product.product_description_en || product.product_description;
-  } else {
-    // 只回傳純中文
-    localizedProduct.product_name = product.product_name;
-    localizedProduct.product_description = product.product_description;
-
-    const { product_name, product_description, pid, category_id, product_price, product_img } = localizedProduct;
-
-    return {
-      pid,
-      category_id,
-      product_name,
-      product_price,
-      product_img,
-      product_description,
-    };
-  }
+  
+  // 確保中英文欄位都存在
+  localizedProduct.product_name_zh = product.product_name || '';
+  localizedProduct.product_name_en = product.product_name_en || product.product_name || '';
+  localizedProduct.product_description_zh = product.product_description || '';
+  localizedProduct.product_description_en = product.product_description_en || product.product_description || '';
+  
 
   return localizedProduct;
 };
@@ -64,21 +49,15 @@ const getSalesConditionKey = (salesCondition) => {
 };
 
 /**
- * 構建搜尋條件，支援多語言搜尋
+ * 構建搜尋條件，支援中英文搜尋
  * @param {string} searchWord - 搜尋關鍵字
- * @param {string} language - 語言代碼
  * @returns {string} SQL WHERE 條件
  */
-export const buildSearchCondition = (searchWord, language = 'zh-TW') => {
+export const buildSearchCondition = (searchWord) => {
   if (!searchWord) return '';
   
   const escapedSearch = `%${searchWord}%`;
   
-  if (language === 'zh-TW') {
-    // 中文搜尋：優先搜尋中文欄位，如果沒有結果則搜尋英文欄位
-    return `AND (product_name LIKE '${escapedSearch}' OR product_description LIKE '${escapedSearch}')`;
-  } else {
-    // 英文搜尋：搜尋英文欄位
-    return `AND (product_name_en LIKE '${escapedSearch}' OR product_description_en LIKE '${escapedSearch}' OR product_name LIKE '${escapedSearch}' OR product_description LIKE '${escapedSearch}')`;
-  }
+  // 搜尋中英文欄位
+  return `AND (product_name LIKE '${escapedSearch}' OR product_description LIKE '${escapedSearch}' OR product_name_en LIKE '${escapedSearch}' OR product_description_en LIKE '${escapedSearch}')`;
 }; 

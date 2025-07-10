@@ -29,9 +29,6 @@ const getListData = async (req) => {
     req.query.searchWord && typeof req.query.searchWord === "string"
       ? req.query.searchWord.trim()
       : "";
-  
-  // 獲取語言設定
-  const language = req.language || 'zh-TW';
 
   let qs = {}; // 用來把 query string 的設定傳給 template
   let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
@@ -39,11 +36,11 @@ const getListData = async (req) => {
   let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; // 價格排序方式
   let tag = req.query.tag ? req.query.tag.trim() : ""; // 價格排序方式
 
-  // 查關鍵字對應api - 支援多語言搜尋
+  // 查關鍵字對應api - 支援中英文搜尋
   let where = ` WHERE 1 `;
   if (searchWord) {
     qs.searchWord = searchWord;
-    where += buildSearchCondition(searchWord, language);
+    where += buildSearchCondition(searchWord);
   }
   // 查價格區間
   if (priceLow) {
@@ -110,8 +107,8 @@ const getListData = async (req) => {
     LIMIT ${(page - 1) * perPage}, ${perPage}`;
     [rows] = await db.query(sql);
     
-    // 對商品資料進行國際化處理
-    const localizedRows = localizeProducts(rows, language);
+    // 對商品資料進行雙語處理
+    const localizedRows = localizeProducts(rows);
     
     output = { ...output, success: true, rows: localizedRows, totalRows, totalPages };
   }
@@ -132,14 +129,13 @@ router.get("/api", async (req, res) => {
 
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
-  const language = req.language || 'zh-TW';
   
   const [rows, fields] = await db.query(
     `SELECT DISTINCT product.*, product_mutiple_img.photo_content_main, product_mutiple_img.photo_content_secondary, product_mutiple_img.photo_content FROM product LEFT JOIN product_mutiple_img ON product.pid = product_mutiple_img.pid WHERE product.pid = ${pid};`
   );
   
   if (rows.length) {
-    const localizedProduct = localizeProduct(rows[0], language);
+    const localizedProduct = localizeProduct(rows[0]);
     return res.json(localizedProduct);
   } else {
     return res.json({});
@@ -148,13 +144,11 @@ router.get("/one/:pid", async (req, res) => {
 
 
 router.get("/recommend", async (req, res) => {
-  const language = req.language || 'zh-TW';
-  
   const [rows] = await db.query(
     "SELECT * FROM product WHERE sales_condition != '已下架' ORDER BY RAND() LIMIT 4");
 
   if (rows.length) {
-    const localizedRows = localizeProducts(rows, language);
+    const localizedRows = localizeProducts(rows);
     return res.json(localizedRows);
   } else {
     return res.json({});
@@ -162,13 +156,10 @@ router.get("/recommend", async (req, res) => {
 });
 
 
-// 測試國際化功能的端點
+// 測試雙語功能的端點
 router.get("/test-i18n", async (req, res) => {
-  const language = req.language || 'zh-TW';
-  
   // 測試翻譯功能
   const testData = {
-    language: language,
     translations: {
       error: req.t('errors.unauthorized'),
       status: req.t('status.success'),
@@ -185,8 +176,8 @@ router.get("/test-i18n", async (req, res) => {
     }
   };
   
-  // 對範例商品進行國際化處理
-  testData.localizedProduct = localizeProduct(testData.sampleProduct, language);
+  // 對範例商品進行雙語處理
+  testData.localizedProduct = localizeProduct(testData.sampleProduct);
   
   res.json(testData);
 });
