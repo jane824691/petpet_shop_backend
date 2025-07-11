@@ -349,7 +349,7 @@ router.post("/add", upload.none(), async (req, res) => {
       phone,
       email,
       finalPrice, // 這裡要對應 total
-      pay_way,
+      pay_way, //pay_way = 1 = '貨到付款'; pay_way = 2 = '信用卡'
       postcode,
       address,
       address_en || '',
@@ -441,8 +441,8 @@ router.get("/payment/create/:oid", async (req, res) => {
       TradeDesc: '測試商品訂單',
       ItemName: '測試商品等',
       ReturnURL: `${HOST}/order-list/payment/return`, // real outcome to backend
-      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
-      OrderResultURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`,
+      ClientBackURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`, // success outcome to frontend
+      OrderResultURL: `https://petpet-shop-fronted.zeabur.app/cart/OrderSteps/paymentStatus`, // failed outcome to frontend
       CustomField1: String(oid),
     };
 
