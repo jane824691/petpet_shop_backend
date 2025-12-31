@@ -485,9 +485,9 @@ router.post('/payment/return', async (req, res) => {
       await db.query(updatePaymentStatus, [oid]);
 
       // 多加firebase等後端交易結果出爐主動通知前端, 避免前端打輪巡polling取得交易結果
-      await firebaseDb.doc(`order_events/${oid}`).set({
+      await firestoreDb.doc(`order_events/${oid}`).set({
         status: 'success',
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestoreDb.FieldValue.serverTimestamp(),
       });
     } else {
       // failed：order_status = 2
@@ -495,9 +495,9 @@ router.post('/payment/return', async (req, res) => {
         "UPDATE `order_list` SET `order_status` = 2 WHERE `oid` = ?";
       await db.query(updatePaymentStatus, [oid]);
 
-      await firebaseDb.doc(`order_events/${oid}`).set({
+      await firestoreDb.doc(`order_events/${oid}`).set({
         status: 'fail',
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestoreDb.FieldValue.serverTimestamp(),
       });
     }
   }
