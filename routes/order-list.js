@@ -4,7 +4,7 @@ import upload from "../utils/upload-imgs.js";
 import dayjs from "dayjs";
 import ecpay_payment from 'ecpay_aio_nodejs';
 import jwt from "jsonwebtoken";
-import { firestoreDb } from "##/utils/connect-firebase.js";
+import admin, { firestoreDb } from "##/utils/connect-firebase.js";
 
 const { MERCHANTID, HASHKEY, HASHIV, HOST } = process.env;
 const router = express.Router();
@@ -487,7 +487,7 @@ router.post('/payment/return', async (req, res) => {
       // 多加firebase等後端交易結果出爐主動通知前端, 避免前端打輪巡polling取得交易結果
       await firestoreDb.doc(`order_events/${oid}`).set({
         status: 'success',
-        updatedAt: admin.firestoreDb.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } else {
       // failed：order_status = 2
@@ -497,7 +497,7 @@ router.post('/payment/return', async (req, res) => {
 
       await firestoreDb.doc(`order_events/${oid}`).set({
         status: 'fail',
-        updatedAt: admin.firestoreDb.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
   }
