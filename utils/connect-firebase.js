@@ -20,4 +20,5 @@ admin.initializeApp({
     storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
 });
 
+export const firestoreDb = admin.firestore(); 
 export default admin;
