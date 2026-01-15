@@ -2,6 +2,13 @@ import express from "express";
 import db from "../utils/connect-mysql.js";
 import { languageMiddleware } from "../utils/i18n.js";
 import { localizeProducts, localizeProduct, buildSearchCondition } from "../utils/product-i18n.js";
+import upload from "./../utils/upload-imgs.js";
+import tinify from "tinify";
+import admin from "./../utils/connect-firebase.js";
+import { v4 as uuidv4 } from "uuid";
+
+// 首先要先建立 Storage 的 Bucket(儲存桶)
+const bucket = admin.storage().bucket();
 
 const router = express.Router();
 
@@ -106,10 +113,10 @@ const getListData = async (req) => {
     const sql = `SELECT * FROM product ${where} ${priceSortClause} 
     LIMIT ${(page - 1) * perPage}, ${perPage}`;
     [rows] = await db.query(sql);
-    
+
     // 對商品資料進行雙語處理
     const localizedRows = localizeProducts(rows);
-    
+
     output = { ...output, success: true, rows: localizedRows, totalRows, totalPages };
   }
 
@@ -129,11 +136,11 @@ router.get("/api", async (req, res) => {
 
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
-  
+
   const [rows, fields] = await db.query(
     `SELECT DISTINCT product.*, product_mutiple_img.photo_content_main, product_mutiple_img.photo_content_secondary, product_mutiple_img.photo_content FROM product LEFT JOIN product_mutiple_img ON product.pid = product_mutiple_img.pid WHERE product.pid = ${pid};`
   );
-  
+
   if (rows.length) {
     const localizedProduct = localizeProduct(rows[0]);
     return res.json(localizedProduct);
@@ -175,11 +182,118 @@ router.get("/test-i18n", async (req, res) => {
       sales_condition: "可購買"
     }
   };
-  
+
   // 對範例商品進行雙語處理
   testData.localizedProduct = localizeProduct(testData.sampleProduct);
-  
+
   res.json(testData);
 });
+
+// 純firebase上傳測試, without 存 MYSQL, 
+// 原本寫upload.array("files", 至多數量), 結果multer會亂判斷數量, 故不讓multer判斷改執行後再條件判斷
+router.post('/productsImg', upload.array("files"), async (req, res) => {
+  try {
+
+    // 檢查是否有檔案
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: "至少上傳 1 張圖片" });
+    }
+
+    if (req.files.length > 4) {
+      return res.status(400).json({ success: false, message: "最多 4 張圖片" });
+    }
+
+    const uploadResults = [];
+
+    // for迴圈是為了依序把使用者上傳的每一張圖片取出來，一張一張處理存儲 firebase
+    // 相當於 for (let i = 0; i < req.files.length; i++)
+    for (let file of req.files) {
+
+      // 上傳圖片到 TinyPNG 並壓縮
+      const buffer = await tinify.fromBuffer(file.buffer).toBuffer();
+
+      // 幫該圖重新使用 uuid 命名並在 Firebase Storage 建立這張圖片的存放位置
+      const blob = bucket.file(`productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`);
+
+      // 等待建立上傳
+      await new Promise((resolve, reject) => {
+        const stream = blob.createWriteStream({
+          metadata: { contentType: file.mimetype }
+        });
+
+        stream.on("finish", resolve);
+        stream.on("error", reject);
+        stream.end(buffer);
+      });
+
+      // 取得此圖片的永久可讀網址
+      const [url] = await blob.getSignedUrl({
+        action: "read",
+        expires: "03-09-2491",
+      });
+
+      // 把這張圖片的結果存進回傳陣列
+      uploadResults.push({
+        fileName: blob.name,
+        imgUrl: url,
+      });
+    }
+
+    return res.json({
+      success: true,
+      images: uploadResults   // 回傳多張
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error occurred while uploading image.");
+  }
+})
+
+// router.post("/add", upload.array("photos", 4), async (req, res) => {
+//   const output = {
+//     success: false,
+//     postData: req.body
+//   }
+
+//   try {
+//     const { name, name_en, description, description_en } = req.body;
+//     let fileUrl = null;
+//     const file = req.file; // 檢查是否有上傳圖片
+//     if (file) {
+//       const blob = bucket.file(
+//         `/productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`
+//       );
+//       const blobStream = blob.createWriteStream({
+//         metadata: {
+//           contentType: file.mimetype,
+//         },
+//       });
+
+//       // 處理上傳錯誤
+//       blobStream.on("error", (err) => {
+//         console.error(err);
+//       });
+
+//       await new Promise((relosve, reject) => {
+//         blobStream.on("finish", async () => {
+//           try {
+
+//           } catch {
+
+//           }
+//         })
+//       })
+//     }
+//   } catch (ex) {
+//     output.exception = {
+//       message: ex.message,
+//       stack: ex.stack,
+//     }
+//     res.status(500).json(output);
+//   }
+
+//   res.json(output);
+// })
 
 export default router;

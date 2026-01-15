@@ -126,7 +126,7 @@ router.post("/add", upload.single("photo"), async (req, res) => {
     let fileUrl = null;
     const file = req.file; // 檢查是否有上傳圖片
 
-    // 如果有上傳圖片，處理圖片上傳到 Firebase Storage
+    // 如果有上傳圖片，處理圖片上傳到 Firebase Storage，初始創會員頭圖於/images的資料夾
     if (file) {
       const blob = bucket.file(
         `images/${uuidv4()}.${file.originalname.split(".").pop()}`
