@@ -191,6 +191,7 @@ router.get("/test-i18n", async (req, res) => {
 
 // 純firebase上傳測試, without 存 MYSQL, 
 // 原本寫upload.array("files", 至多數量), 結果multer會亂判斷數量, 故不讓multer判斷改執行後再條件判斷
+// 這個寫法是上傳時欄位key都名為"files"的寫法
 router.post('/productsImg', upload.array("files"), async (req, res) => {
   try {
 
@@ -250,37 +251,17 @@ router.post('/productsImg', upload.array("files"), async (req, res) => {
   }
 })
 
-// 真會員建立資料，圖片欄位為必要選項至少 1 張
-router.post('/add', upload.fields([
+// 先打商品圖拿url，圖片欄位為必要選項至少 1 張
+router.post('/addImg', upload.fields([
   { name: 'productImg', maxCount: 1 },
   { name: 'photoContentMain', maxCount: 1 },
   { name: 'photoContentSecondary', maxCount: 1 },
   { name: 'photoContent', maxCount: 1 },
 ]),
   async (req, res) => {
-    const output = {
-      success: false,
-      postData: req.body, // 除錯用
-    };
 
     try {
-
-      // 取得前端送回的新增商品資訊
-      const {
-        categoryId,
-        productName,
-        productPrice,
-        stock,
-        productImg,
-        photoContentMain, // 非必要項
-        photoContentSecondary, // 非必要項
-        photoContent, // 非必要項
-        productDescription,
-        productNameEn,
-        productDescriptionEn,
-      } = req.body;
-
-      // 檢查是否有檔案
+      // 檢查是否有圖檔
       const allFiles = Object.values(req.files).flat();
       if (allFiles.length === 0) {
         return res.status(400).json({ success: false, message: "至少上傳 1 張圖片" });
@@ -293,7 +274,7 @@ router.post('/add', upload.fields([
       const uploadResults = [];
 
       // for迴圈是為了依序把使用者上傳的每一張圖片取出來，一張一張處理存儲 firebase
-      // 相當於 for (let i = 0; i < req.files.length; i++)
+      // 相當於 for (let i = 0; i < allFiles.length; i++)
       for (let file of allFiles) {
 
         // 上傳圖片到 TinyPNG 並壓縮
@@ -325,11 +306,10 @@ router.post('/add', upload.fields([
           imgUrl: url,
         });
       }
-      console.log('uploadResults====', uploadResults)
 
       return res.json({
         success: true,
-        images: uploadResults   // 回傳多張
+        images: uploadResults   // 回傳多張陣列包物件
       });
 
     } catch (err) {
@@ -338,4 +318,59 @@ router.post('/add', upload.fields([
     }
   })
 
+// 商品圖url會暫存前端, 方便複用, 不會逼所有圖都傳成功才能存db
+router.post("/saveInfo", upload.none(), async (req, res) => {
+
+});
+
+/*
+    // 取得前端送回的新增商品資訊
+    const {
+      categoryId,
+      productName,
+      productPrice,
+      stock,
+      productImg,
+      photoContentMain, // 非必要項
+      photoContentSecondary, // 非必要項
+      photoContent, // 非必要項
+      productDescription,
+      productNameEn,
+      productDescriptionEn,
+    } = req.body;
+
+
+
+      const sql = `INSERT INTO product 
+      (category_id, product_name, product_price, stock, product_img, product_description, product_name_en, product_description_en, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))`;
+
+    const params = [
+      categoryId,
+      productName,
+      productPrice,
+      stock,
+      productDescription,
+      productNameEn,
+      productDescriptionEn,
+    ];
+
+    const sql2 =
+      "INSERT INTO `product_mutiple_img`(`pid`, `sale_price`, `actual_amount`) VALUES ?";
+
+
+    // 插入資料到 MySQL
+    const [result] = await db.query(sql, params);
+
+    // 檢查是否成功插入資料
+    if (result.affectedRows > 0) {
+      output.success = true;
+      output.result = result;
+      output.photo = fileUrl; // 如果有圖片，返回其 URL
+    } else {
+      throw new Error("Failed to insert data into MySQL.");
+    }
+
+    return res.status(200).json(output);
+*/
 export default router;
