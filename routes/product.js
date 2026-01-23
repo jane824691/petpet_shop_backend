@@ -250,50 +250,92 @@ router.post('/productsImg', upload.array("files"), async (req, res) => {
   }
 })
 
-// router.post("/add", upload.array("photos", 4), async (req, res) => {
-//   const output = {
-//     success: false,
-//     postData: req.body
-//   }
+// 真會員建立資料，圖片欄位為必要選項至少 1 張
+router.post('/add', upload.fields([
+  { name: 'productImg', maxCount: 1 },
+  { name: 'photoContentMain', maxCount: 1 },
+  { name: 'photoContentSecondary', maxCount: 1 },
+  { name: 'photoContent', maxCount: 1 },
+]),
+  async (req, res) => {
+    const output = {
+      success: false,
+      postData: req.body, // 除錯用
+    };
 
-//   try {
-//     const { name, name_en, description, description_en } = req.body;
-//     let fileUrl = null;
-//     const file = req.file; // 檢查是否有上傳圖片
-//     if (file) {
-//       const blob = bucket.file(
-//         `/productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`
-//       );
-//       const blobStream = blob.createWriteStream({
-//         metadata: {
-//           contentType: file.mimetype,
-//         },
-//       });
+    try {
 
-//       // 處理上傳錯誤
-//       blobStream.on("error", (err) => {
-//         console.error(err);
-//       });
+      // 取得前端送回的新增商品資訊
+      const {
+        categoryId,
+        productName,
+        productPrice,
+        stock,
+        productImg,
+        photoContentMain, // 非必要項
+        photoContentSecondary, // 非必要項
+        photoContent, // 非必要項
+        productDescription,
+        productNameEn,
+        productDescriptionEn,
+      } = req.body;
 
-//       await new Promise((relosve, reject) => {
-//         blobStream.on("finish", async () => {
-//           try {
+      // 檢查是否有檔案
+      const allFiles = Object.values(req.files).flat();
+      if (allFiles.length === 0) {
+        return res.status(400).json({ success: false, message: "至少上傳 1 張圖片" });
+      }
 
-//           } catch {
+      if (allFiles.length > 4) {
+        return res.status(400).json({ success: false, message: "最多 4 張圖片" });
+      }
 
-//           }
-//         })
-//       })
-//     }
-//   } catch (ex) {
-//     output.exception = {
-//       message: ex.message,
-//       stack: ex.stack,
-//     }
-//     res.status(500).json(output);
-//   }
+      const uploadResults = [];
 
-//   res.json(output);
-// })
+      // for迴圈是為了依序把使用者上傳的每一張圖片取出來，一張一張處理存儲 firebase
+      // 相當於 for (let i = 0; i < req.files.length; i++)
+      for (let file of allFiles) {
+
+        // 上傳圖片到 TinyPNG 並壓縮
+        const buffer = await tinify.fromBuffer(file.buffer).toBuffer();
+
+        // 幫該圖重新使用 uuid 命名並在 Firebase Storage 建立這張圖片的存放位置
+        const blob = bucket.file(`productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`);
+
+        // 等待建立上傳
+        await new Promise((resolve, reject) => {
+          const stream = blob.createWriteStream({
+            metadata: { contentType: file.mimetype }
+          });
+
+          stream.on("finish", resolve);
+          stream.on("error", reject);
+          stream.end(buffer);
+        });
+
+        // 取得此圖片的永久可讀網址
+        const [url] = await blob.getSignedUrl({
+          action: "read",
+          expires: "03-09-2491",
+        });
+
+        // 把這張圖片的結果存進回傳陣列
+        uploadResults.push({
+          fileName: blob.name,
+          imgUrl: url,
+        });
+      }
+      console.log('uploadResults====', uploadResults)
+
+      return res.json({
+        success: true,
+        images: uploadResults   // 回傳多張
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Server error occurred while uploading image.");
+    }
+  })
 
 export default router;
