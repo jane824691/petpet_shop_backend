@@ -138,7 +138,7 @@ router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
 
   const [rows, fields] = await db.query(
-    `SELECT DISTINCT product.*, product_mutiple_img.photo_content_main, product_mutiple_img.photo_content_secondary, product_mutiple_img.photo_content FROM product LEFT JOIN product_mutiple_img ON product.pid = product_mutiple_img.pid WHERE product.pid = ${pid};`
+    `SELECT DISTINCT product.*, product_multiple_img.photo_content_main, product_multiple_img.photo_content_secondary, product_multiple_img.photo_content FROM product LEFT JOIN product_multiple_img ON product.pid = product_multiple_img.pid WHERE product.pid = ${pid};`
   );
 
   if (rows.length) {
@@ -356,7 +356,7 @@ router.post("/saveInfo", upload.none(), async (req, res) => {
     ];
 
     const sql2 =
-      "INSERT INTO `product_mutiple_img`(`pid`, `sale_price`, `actual_amount`) VALUES ?";
+      "INSERT INTO `product_multiple_img`(`pid`, `sale_price`, `actual_amount`) VALUES ?";
 
 
     // 插入資料到 MySQL
