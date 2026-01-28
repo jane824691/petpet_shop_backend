@@ -110,8 +110,15 @@ const getListData = async (req) => {
     // 根據是否有價格排序來決定 SQL 查詢中的排序方式
     let priceSortClause = sortByClause ? sortByClause : "ORDER BY pid DESC";
 
-    const sql = `SELECT * FROM product ${where} ${priceSortClause} 
-    LIMIT ${(page - 1) * perPage}, ${perPage}`;
+    // 商城前台不顯示'已下架'商品 
+    const baseCondition = `sales_condition <> '已下架'`;
+
+    const finalWhere = where
+      ? `${where} AND ${baseCondition}`
+      : `WHERE ${baseCondition}`;
+
+    const sql = `SELECT * FROM product ${finalWhere} ${priceSortClause} LIMIT ${(page - 1) * perPage}, ${perPage}
+`;
     [rows] = await db.query(sql);
 
     // 對商品資料進行雙語處理
