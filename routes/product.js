@@ -252,13 +252,28 @@ router.post('/productsImg', upload.array("files"), async (req, res) => {
 })
 
 // 先打商品圖拿url，圖片欄位為必要選項至少 1 張
-router.post('/addImg', upload.fields([
+router.post('/add', upload.fields([
   { name: 'productImg', maxCount: 1 },
   { name: 'photoContentMain', maxCount: 1 },
   { name: 'photoContentSecondary', maxCount: 1 },
   { name: 'photoContent', maxCount: 1 },
 ]),
   async (req, res) => {
+    const output = {
+      success: false,
+      postData: req.body, // 除錯用
+    };
+
+    // 取得前端送回的新增商品資訊
+    const {
+      categoryId,
+      productName,
+      productPrice,
+      stock,
+      productDescription,
+      productNameEn,
+      productDescriptionEn,
+    } = req.body;
 
     try {
       // 檢查是否有圖檔
@@ -307,14 +322,40 @@ router.post('/addImg', upload.fields([
         });
       }
 
-      return res.json({
-        success: true,
-        images: uploadResults   // 回傳多張陣列包物件
-      });
+      const sql = `INSERT INTO product 
+      (category_id, product_name, product_price, stock, sales_condition, product_img ,product_description, product_name_en, product_description_en, edit_time) 
+      VALUES (?, ?, ?, ?, '上架中', ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))`;
+
+
+      const params = [
+        categoryId,
+        productName,
+        productPrice,
+        stock,
+        uploadResults[0].imgUrl, // productImg,
+        productDescription,
+        productNameEn,
+        productDescriptionEn,
+      ];
+      const [result] = await db.query(sql, params);
+
+      if (result.affectedRows > 0) {
+        output.success = true;
+        output.result = result;
+        output.photo = uploadResults;
+      } else {
+        throw new Error('Failed to insert data into MySQL.')
+      }
+
+      return res.status(200).json(output);
 
     } catch (err) {
       console.error(err);
-      res.status(500).send("Server error occurred while uploading image.");
+      output.exception = {
+        message: err.message,
+        stack: err.stack,
+      };
+      res.status(500).json(output);
     }
   })
 
