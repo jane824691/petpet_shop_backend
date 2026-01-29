@@ -258,7 +258,15 @@ router.post('/productsImg', upload.array("files"), async (req, res) => {
   }
 })
 
-// 先打商品圖拿url，圖片欄位為必要選項至少 1 張
+// 如果方案為商品圖url先暫存前端, 方便複用, 不會逼所有圖都傳成功才能存db
+// 那這隻api就專門處理最後一部存所有資料進db = 上傳 + 寫入 db 是分開兩件事
+router.post("/saveInfo", upload.none(), async (req, res) => {
+
+});
+
+
+// 前端上傳圖時用預覽, 打這支api時一次做完上傳 + 寫入 db
+// 最少須 1 張圖, 至多 4 張
 router.post('/add', upload.fields([
   { name: 'productImg', maxCount: 1 },
   { name: 'photoContentMain', maxCount: 1 },
@@ -344,17 +352,31 @@ router.post('/add', upload.fields([
         productNameEn,
         productDescriptionEn,
       ];
-      const [result] = await db.query(sql, params);
+      const [result1] = await db.query(sql, params);
 
-      if (result.affectedRows > 0) {
-        output.success = true;
-        output.result = result;
-        output.photo = uploadResults;
-      } else {
-        throw new Error('Failed to insert data into MySQL.')
-      }
+      // 準備同時生成第2張表product_multiple_img + 同一筆pid對很多圖
+      const insertedPid = result1.insertId;
 
-      return res.status(200).json(output);
+      // 先處理uploadResults [{}]格式 
+      // 轉成MYSQL要的[ [pid, url1, url2, url3] ]格式
+      const urls = uploadResults.map(v => v.imgUrl);
+
+      const [main = null, secondary = null, content = null] = urls;
+
+      const row = [insertedPid, main, secondary, content];
+
+      const values = [row];
+
+      const sql2 =
+        "INSERT INTO `product_multiple_img`(`pid`, `photo_content_main`, `photo_content_secondary`, `photo_content`) VALUES ?";
+
+      const [result2] = await db.query(sql2, [values])
+
+      output.success = true;
+      output.result = {
+        product: result1,
+        product_multiple_img: result2,
+      };
 
     } catch (err) {
       console.error(err);
@@ -364,61 +386,7 @@ router.post('/add', upload.fields([
       };
       res.status(500).json(output);
     }
+    res.json(output);
   })
 
-// 商品圖url會暫存前端, 方便複用, 不會逼所有圖都傳成功才能存db
-router.post("/saveInfo", upload.none(), async (req, res) => {
-
-});
-
-/*
-    // 取得前端送回的新增商品資訊
-    const {
-      categoryId,
-      productName,
-      productPrice,
-      stock,
-      productImg,
-      photoContentMain, // 非必要項
-      photoContentSecondary, // 非必要項
-      photoContent, // 非必要項
-      productDescription,
-      productNameEn,
-      productDescriptionEn,
-    } = req.body;
-
-
-
-      const sql = `INSERT INTO product 
-      (category_id, product_name, product_price, stock, product_img, product_description, product_name_en, product_description_en, created_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'))`;
-
-    const params = [
-      categoryId,
-      productName,
-      productPrice,
-      stock,
-      productDescription,
-      productNameEn,
-      productDescriptionEn,
-    ];
-
-    const sql2 =
-      "INSERT INTO `product_multiple_img`(`pid`, `sale_price`, `actual_amount`) VALUES ?";
-
-
-    // 插入資料到 MySQL
-    const [result] = await db.query(sql, params);
-
-    // 檢查是否成功插入資料
-    if (result.affectedRows > 0) {
-      output.success = true;
-      output.result = result;
-      output.photo = fileUrl; // 如果有圖片，返回其 URL
-    } else {
-      throw new Error("Failed to insert data into MySQL.");
-    }
-
-    return res.status(200).json(output);
-*/
 export default router;
