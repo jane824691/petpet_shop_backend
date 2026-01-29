@@ -359,7 +359,7 @@ router.post('/add', upload.fields([
 
       // 先處理uploadResults [{}]格式 
       // 轉成MYSQL要的[ [pid, url1, url2, url3] ]格式
-      const urls = uploadResults.map(v => v.imgUrl);
+      const urls = uploadResults.slice(1, 4).map(v => v.imgUrl);
 
       const [main = null, secondary = null, content = null] = urls;
 
