@@ -389,4 +389,13 @@ router.post('/add', upload.fields([
     res.json(output);
   })
 
+import productController from "../controllers/productController.js";
+
+router.post('/add-v2', upload.fields([
+  { name: 'productImg', maxCount: 1 },
+  { name: 'photoContentMain', maxCount: 1 },
+  { name: 'photoContentSecondary', maxCount: 1 },
+  { name: 'photoContent', maxCount: 1 },
+]), productController.createProduct.bind(productController));
+
 export default router;
