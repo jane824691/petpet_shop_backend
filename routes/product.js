@@ -144,16 +144,33 @@ router.get("/api", async (req, res) => {
 router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
 
-  const [rows, fields] = await db.query(
-    `SELECT DISTINCT product.*, product_multiple_img.photo_path, product_multiple_img.sort_order FROM product LEFT JOIN product_multiple_img ON product.pid = product_multiple_img.pid WHERE product.pid = ${pid} ORDER BY product_multiple_img.sort_order ASC LIMIT 1;`
+  const [rows] = await db.query(
+    `SELECT product.*, product_multiple_img.photo_path, product_multiple_img.sort_order FROM product LEFT JOIN product_multiple_img ON product.pid = product_multiple_img.pid WHERE product.pid = ${pid} ORDER BY product_multiple_img.sort_order ASC;`
   );
 
-  if (rows.length) {
-    const localizedProduct = localizeProduct(rows[0]);
-    return res.json(localizedProduct);
-  } else {
-    return res.json({});
+  if (!rows.length) {
+    return res.status(404).json({ success: false, message: "pid not found" });
   }
+
+  const product = {
+    pid: rows[0].pid,
+    product_name: rows[0].product_name,
+    product_name_en: rows[0].product_name_en,
+    stock: rows[0].stock,
+    category_id: rows[0].category_id,
+    sales_condition: rows[0].sales_condition,
+    product_price: rows[0].product_price,
+    product_description: rows[0].product_description,
+    product_description_en: rows[0].product_description_en,
+    product_img: rows[0].product_img, // 主圖
+    edit_time: rows[0].edit_time,
+    images: rows.map(row => ({
+      photo_path: row.photo_path,
+      sort_order: row.sort_order
+    }))
+  }
+  return res.json(product);
+
 });
 
 
