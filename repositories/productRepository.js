@@ -21,14 +21,20 @@ class ProductRepository {
     return result;
   }
 
-  async createProductMultipleImg(pid, imageUrls) {
-    const urls = imageUrls.slice(1, 4).map(v => v.imgUrl);
-    const [main = null, secondary = null, content = null] = urls;
-    const row = [pid, main, secondary, content];
-    const values = [row];
+  async createProductMultipleImg(pid, multipleImages) {
+    if (!Array.isArray(multipleImages) || multipleImages.length === 0) {
+      return { affectedRows: 0, insertId: 0 };
+    }
 
-    const sql = "INSERT INTO `product_multiple_img`(`pid`, `photo_content_main`, `photo_content_secondary`, `photo_content`) VALUES ?";
-    const [result] = await db.query(sql, [values]);
+    const rows = multipleImages.map((v) => [
+      pid,
+      v.photo_path,
+      v.sort_order,
+    ]);
+
+    const sql =
+      "INSERT INTO `product_multiple_img`(`pid`, `photo_path`, `sort_order`) VALUES ?";
+    const [result] = await db.query(sql, [rows]);
     return result;
   }
 }

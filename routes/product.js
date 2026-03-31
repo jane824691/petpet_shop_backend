@@ -145,7 +145,7 @@ router.get("/one/:pid", async (req, res) => {
   let pid = +req.params.pid || 1;
 
   const [rows, fields] = await db.query(
-    `SELECT DISTINCT product.*, product_multiple_img.photo_content_main, product_multiple_img.photo_content_secondary, product_multiple_img.photo_content FROM product LEFT JOIN product_multiple_img ON product.pid = product_multiple_img.pid WHERE product.pid = ${pid};`
+    `SELECT DISTINCT product.*, product_multiple_img.photo_path, product_multiple_img.sort_order FROM product LEFT JOIN product_multiple_img ON product.pid = product_multiple_img.pid WHERE product.pid = ${pid} ORDER BY product_multiple_img.sort_order ASC LIMIT 1;`
   );
 
   if (rows.length) {
@@ -358,19 +358,25 @@ router.post('/add', upload.fields([
       const insertedPid = result1.insertId;
 
       // 先處理uploadResults [{}]格式 
-      // 轉成MYSQL要的[ [pid, url1, url2, url3] ]格式
-      const urls = uploadResults.slice(1, 4).map(v => v.imgUrl);
+      // 目標轉成最終SQL格式
+      // INSERT INTO `product_multiple_img`(`pid`, `photo_path`, `sort_order`) VALUES (187, '3610272-6_xxl.jpg', 0),
+      // (187, '3610272-3_xxl.jpg', 1),
+      // (187, '3610272-8_xxl.jpg', 2);
+      const main = uploadResults[1]?.imgUrl ?? null;
+      const secondary = uploadResults[2]?.imgUrl ?? null;
+      const content = uploadResults[3]?.imgUrl ?? null;
 
-      const [main = null, secondary = null, content = null] = urls;
+      const rows2 = [];
+      if (main) rows2.push([insertedPid, main, 1]);
+      if (secondary) rows2.push([insertedPid, secondary, 2]);
+      if (content) rows2.push([insertedPid, content, 3]);
 
-      const row = [insertedPid, main, secondary, content];
-
-      const values = [row];
-
-      const sql2 =
-        "INSERT INTO `product_multiple_img`(`pid`, `photo_content_main`, `photo_content_secondary`, `photo_content`) VALUES ?";
-
-      const [result2] = await db.query(sql2, [values])
+      let result2 = { affectedRows: 0 };
+      if (rows2.length > 0) {
+        const sql2 =
+          "INSERT INTO `product_multiple_img`(`pid`, `photo_path`, `sort_order`) VALUES ?";
+        [result2] = await db.query(sql2, [rows2]);
+      }
 
       output.success = true;
       output.result = {
@@ -393,9 +399,7 @@ import productController from "../controllers/productController.js";
 
 router.post('/add-v2', upload.fields([
   { name: 'productImg', maxCount: 1 },
-  { name: 'photoContentMain', maxCount: 1 },
-  { name: 'photoContentSecondary', maxCount: 1 },
-  { name: 'photoContent', maxCount: 1 },
+  { name: 'photos', maxCount: 3 },  // 非必須，數量上限視需求調整
 ]), productController.createProduct.bind(productController));
 
 export default router;

@@ -7,64 +7,72 @@ const bucket = admin.storage().bucket();
 
 class ProductService {
   validateFiles(files) {
-    const allFiles = Object.values(files).flat();
-
-    if (allFiles.length === 0) {
-      throw new Error("至少上傳 1 張圖片");
+    const productImgFile = files?.productImg?.[0];
+    if (!productImgFile) {
+      throw new Error("productImg 為必須");
     }
 
-    if (allFiles.length > 4) {
-      throw new Error("最多 4 張圖片");
+    const photos = Array.isArray(files?.photos) ? files.photos : [];
+    if (photos.length > 3) {
+      throw new Error("最多 3 張多圖");
     }
 
-    return allFiles;
+    return { productImgFile, photos };
   }
 
-  async uploadImages(files) {
-    const allFiles = this.validateFiles(files);
-    const uploadResults = [];
+  async uploadImage(file) {
+    // 壓縮圖片後上傳到 Firebase Storage，回傳可讀 URL 與 mime_type
+    const buffer = await tinify.fromBuffer(file.buffer).toBuffer();
+    const blob = bucket.file(
+      `productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`
+    );
 
-    for (let file of allFiles) {
-      const buffer = await tinify.fromBuffer(file.buffer).toBuffer();
-      const blob = bucket.file(`productsImg/${uuidv4()}.${file.originalname.split(".").pop()}`);
-
-      await new Promise((resolve, reject) => {
-        const stream = blob.createWriteStream({
-          metadata: { contentType: file.mimetype }
-        });
-
-        stream.on("finish", resolve);
-        stream.on("error", reject);
-        stream.end(buffer);
+    await new Promise((resolve, reject) => {
+      const stream = blob.createWriteStream({
+        metadata: { contentType: file.mimetype },
       });
 
-      const [url] = await blob.getSignedUrl({
-        action: "read",
-        expires: "03-09-2491",
-      });
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+      stream.end(buffer);
+    });
 
-      uploadResults.push({
-        fileName: blob.name,
-        imgUrl: url,
-      });
-    }
+    const [url] = await blob.getSignedUrl({
+      action: "read",
+      expires: "03-09-2491",
+    });
 
-    return uploadResults;
+    return { imgUrl: url};
   }
 
   async createProduct(productData, files) {
-    const uploadResults = await this.uploadImages(files);
+    // 建立商品主資料 + 多圖（依 sort_order 決定順序）
+    const { productImgFile, photos } = this.validateFiles(files);
 
+    // productImg：商品主圖（只用第一張）
+    const productImg = await this.uploadImage(productImgFile);
+
+    const multipleImages = [];
+    for (let i = 0; i < photos.length; i++) {
+      const uploaded = await this.uploadImage(photos[i]);
+      multipleImages.push({
+        photo_path: uploaded.imgUrl,
+        sort_order: i,
+      });
+    }
+
+    // 寫入 product 表：取得 pid（insertId）
     const productResult = await productRepository.createProduct({
       ...productData,
-      productImg: uploadResults[0].imgUrl,
+      productImg: productImg.imgUrl,
     });
 
     const insertedPid = productResult.insertId;
 
+    // 寫入 product_multiple_img：多筆（pid, photo_path, sort_order, mime_type）
     const multipleImgResult = await productRepository.createProductMultipleImg(
       insertedPid,
-      uploadResults
+      multipleImages
     );
 
     return {
