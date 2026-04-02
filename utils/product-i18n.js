@@ -39,13 +39,14 @@ export const localizeProduct = (product) => {
  * @returns {string} 翻譯鍵值
  */
 const getSalesConditionKey = (salesCondition) => {
+  if (!salesCondition) return salesCondition;
   const conditionMap = {
-    '可購買': 'available',
-    '已售完': 'sold_out',
-    '已下架': 'discontinued'
+    '上架中': 'available',
+    '已下架': 'discontinued',
+    // '已售完': 'sold_out',
   };
   
-  return conditionMap[salesCondition] || 'available';
+  return conditionMap[salesCondition];
 };
 
 /**

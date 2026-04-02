@@ -121,10 +121,7 @@ const getListData = async (req) => {
 `;
     [rows] = await db.query(sql);
 
-    // 對商品資料進行雙語處理
-    const localizedRows = localizeProducts(rows);
-
-    output = { ...output, success: true, rows: localizedRows, totalRows, totalPages };
+    output = { ...output, success: true, rows: rows, totalRows, totalPages };
   }
 
   return output;
