@@ -29,6 +29,17 @@ router.use((req, res, next) => {
 });
 
 // 總頁面的所有資訊
+const toProductListItemDTO = (product) => ({
+  pid: product.pid,
+  categoryId: product.category_id,
+  nameZh: product.product_name,
+  nameEn: product.product_name_en,
+  productPrice: product.product_price,
+  stock: product.stock,
+  salesCondition: product.sales_condition,
+  productImg: product.product_img,
+});
+
 const getListData = async (req) => {
   const perPage = 12; // 每頁幾筆
   let page = +req.query.page || 1; // 用戶決定要看第幾頁
@@ -121,7 +132,13 @@ const getListData = async (req) => {
 `;
     [rows] = await db.query(sql);
 
-    output = { ...output, success: true, rows: rows, totalRows, totalPages };
+    output = {
+      ...output,
+      success: true,
+      rows: rows.map(toProductListItemDTO),
+      totalRows,
+      totalPages,
+    };
   }
 
   return output;
