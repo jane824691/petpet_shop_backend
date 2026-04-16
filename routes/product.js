@@ -193,8 +193,8 @@ router.get("/recommend", async (req, res) => {
     "SELECT * FROM product WHERE sales_condition != '已下架' ORDER BY RAND() LIMIT 4");
 
   if (rows.length) {
-    const localizedRows = localizeProducts(rows);
-    return res.json(localizedRows);
+    const organizedRows = rows.map(toProductListItemDTO); 
+    return res.json(organizedRows);
   } else {
     return res.json({});
   }
