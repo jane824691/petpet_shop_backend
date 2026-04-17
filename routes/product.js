@@ -40,6 +40,31 @@ const toProductListItemDTO = (product) => ({
   productImg: product.product_img,
 });
 
+const toProductDetailDTO = (rows) => {
+  const base = rows[0];
+  const images = rows
+    .filter((row) => row.photo_path)
+    .map((row) => ({
+      photoPath: row.photo_path,
+      sortOrder: row.sort_order,
+    }));
+
+  return {
+    pid: base.pid,
+    categoryId: base.category_id,
+    nameZh: base.product_name,
+    nameEn: base.product_name_en,
+    stock: base.stock,
+    salesCondition: base.sales_condition,
+    price: base.product_price,
+    descriptionZh: base.product_description,
+    descriptionEn: base.product_description_en,
+    productImg: base.product_img,
+    editTime: base.edit_time,
+    images,
+  };
+};
+
 const getListData = async (req) => {
   const perPage = 12; // 每頁幾筆
   let page = +req.query.page || 1; // 用戶決定要看第幾頁
@@ -165,26 +190,8 @@ router.get("/one/:pid", async (req, res) => {
   if (!rows.length) {
     return res.status(404).json({ success: false, message: "pid not found" });
   }
-
-  const product = {
-    pid: rows[0].pid,
-    product_name: rows[0].product_name,
-    product_name_en: rows[0].product_name_en,
-    stock: rows[0].stock,
-    category_id: rows[0].category_id,
-    sales_condition: rows[0].sales_condition,
-    product_price: rows[0].product_price,
-    product_description: rows[0].product_description,
-    product_description_en: rows[0].product_description_en,
-    product_img: rows[0].product_img, // 主圖
-    edit_time: rows[0].edit_time,
-    images: rows.map(row => ({
-      photo_path: row.photo_path,
-      sort_order: row.sort_order
-    }))
-  }
-  return res.json(product);
-
+  
+  return res.json(toProductDetailDTO(rows));
 });
 
 
