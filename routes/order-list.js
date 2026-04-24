@@ -422,16 +422,7 @@ router.get("/payment/create/:oid", async (req, res) => {
     // 動態引入, 使用該api才引入
     const { default: ecpay_payment } = await import('ecpay_aio_nodejs');
 
-    const MerchantTradeDate = new Date().toLocaleString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-      timeZone: 'UTC',
-    });
+    const MerchantTradeDate = dayjs().format('YYYY/MM/DD HH:mm:ss');
 
     const TradeNo = 'test' + new Date().getTime();
 
