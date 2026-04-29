@@ -122,18 +122,21 @@ const getListData = async (req) => {
 };
 
 router.get("/api", async (req, res) => {
-  res.json(await getListData(req));
-  /*
   if(res.locals.jwt?.sid){
     return res.json(await getListData(req));
   } else {
-    return res.json({success: false, error: "沒有授權, 不能取得資料"});
+    return res.status(401).json({success: false, error: "沒有授權, 不能取得資料"});
   }
-  */
 });
 
 // 取得某會員底下所有訂單
 router.get("/person/:sid", async (req, res) => {
+  const token = req.body.token;  // 從前端請求中取得 token
+  
+  if (!token) {
+    return res.status(401).json({ success: false, error: "沒有授權，不能取得資料" });
+  }
+  
   try {
     let sid = req.params.sid || 1; // 使用 req.params.sid 來獲取路徑參數
     let page = parseInt(req.query.page) || 1;

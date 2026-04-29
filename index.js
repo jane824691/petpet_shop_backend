@@ -102,91 +102,91 @@ app.use("/coupon-list/coupon-use", couponListUseRouter);
 app.use("/member", membercenterRouter);
 
 //後端server的fetch拿資料，不受瀏覽器cors影響
-app.get("/yahoo", async (req, res) => {
-  const r = await fetch("https://tw.yahoo.com/");
-  const txt = await r.text();
-  res.send(txt);
-});
+// app.get("/yahoo", async (req, res) => {
+//   const r = await fetch("https://tw.yahoo.com/");
+//   const txt = await r.text();
+//   res.send(txt);
+// });
 
-  // 檢查欄位驗證
-app.post("/check", async (req, res) => {
-  const { account } = req.body;
-  const newErrors = {
-    account: null,
-  };
+//   // 檢查欄位驗證
+// app.post("/check", async (req, res) => {
+//   const { account } = req.body;
+//   const newErrors = {
+//     account: null,
+//   };
 
-  // 檢查帳號
-  if (!account.trim()) {
-    newErrors.account = "帳號未填寫";
-  } else {
-    // 如果帳號填寫了，進行資料庫查詢
-    const query = `SELECT * FROM profile WHERE account = ?`;
-    connection.query(query, [account], (error, results) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ success: false, code: 500, errors: ["伺服器錯誤"] });
-      }
+//   // 檢查帳號
+//   if (!account.trim()) {
+//     newErrors.account = "帳號未填寫";
+//   } else {
+//     // 如果帳號填寫了，進行資料庫查詢
+//     const query = `SELECT * FROM profile WHERE account = ?`;
+//     connection.query(query, [account], (error, results) => {
+//       if (error) {
+//         return res
+//           .status(500)
+//           .json({ success: false, code: 500, errors: ["伺服器錯誤"] });
+//       }
 
-      if (results.length > 0) {
-        // 如果查詢結果存在，代表帳號已經存在
-        newErrors.account = "帳號已存在";
-      }
+//       if (results.length > 0) {
+//         // 如果查詢結果存在，代表帳號已經存在
+//         newErrors.account = "帳號已存在";
+//       }
 
-      // 最後檢查是否有錯誤
-      if (newErrors.account) {
-        return res
-          .status(400)
-          .json({ success: false, code: 400, errors: newErrors });
-      } else {
-        // 如果帳號沒有問題，繼續檢查其他欄位
+//       // 最後檢查是否有錯誤
+//       if (newErrors.account) {
+//         return res
+//           .status(400)
+//           .json({ success: false, code: 400, errors: newErrors });
+//       } else {
+//         // 如果帳號沒有問題，繼續檢查其他欄位
 
-        // 最終如果都沒有錯誤，回傳成功訊息
-        return res
-          .status(200)
-          .json({ success: true, code: 200, message: "欄位檢查通過" });
-      }
-    });
-  }
-});
+//         // 最終如果都沒有錯誤，回傳成功訊息
+//         return res
+//           .status(200)
+//           .json({ success: true, code: 200, message: "欄位檢查通過" });
+//       }
+//     });
+//   }
+// });
 
-app.post("/login", async (req, res) => {
-  //回傳內容
-  const output = {
-    success: false,
-    code: 0,
-    postData: req.body,
-  };
-  // 比對資料表
-  if (!req.body.account || !req.body.password) {
-    // 資料不足
-    output.code = 410;
-    return res.json(output);
-  }
-  const sql = "SELECT * FROM profile WHERE account=?";
-  const [rows] = await db.query(sql, [req.body.account]);
+// app.post("/login", async (req, res) => {
+//   //回傳內容
+//   const output = {
+//     success: false,
+//     code: 0,
+//     postData: req.body,
+//   };
+//   // 比對資料表
+//   if (!req.body.account || !req.body.password) {
+//     // 資料不足
+//     output.code = 410;
+//     return res.json(output);
+//   }
+//   const sql = "SELECT * FROM profile WHERE account=?";
+//   const [rows] = await db.query(sql, [req.body.account]);
 
-  if (!rows.length) {
-    // 帳號是錯的
-    output.code = 400;
-    return res.json(output);
-  }
-  const row = rows[0];
-  //用戶送過來的密碼跟password(hash)比對
-  const pass = await bcrypt.compare(req.body.password, row.profile.password);
-  if (!pass) {
-    // 密碼是錯的
-    output.code = 420;
-    return res.json(output);
-  }
-  output.code = 200; //自定義
-  output.success = true;
+//   if (!rows.length) {
+//     // 帳號是錯的
+//     output.code = 400;
+//     return res.json(output);
+//   }
+//   const row = rows[0];
+//   //用戶送過來的密碼跟password(hash)比對
+//   const pass = await bcrypt.compare(req.body.password, row.profile.password);
+//   if (!pass) {
+//     // 密碼是錯的
+//     output.code = 420;
+//     return res.json(output);
+//   }
+//   output.code = 200; //自定義
+//   output.success = true;
 
-});
-app.get("/logout", async (req, res) => {
-  delete req.session.admin;
-  res.redirect("/");
-});
+// });
+// app.get("/logout", async (req, res) => {
+//   delete req.session.admin;
+//   res.redirect("/");
+// });
 
 app.post("/login-jwt", async (req, res) => {
   const output = {
@@ -233,77 +233,77 @@ app.post("/login-jwt", async (req, res) => {
 });
 
 //把token傳過來
-app.get("/check", async (req, res) => {
-  //res.locals.jwt: {id, account}
-  const output = {
-    success: false,
-    error: "",
-    data: {},
-  };
-  //沒找到jwt&id就顯示沒有權限並回傳資料
-  if (!res.locals.jwt?.sid) {
-    output.error = "沒有權限";
-    return res.json(output);
-  }
+// app.get("/check", async (req, res) => {
+//   //res.locals.jwt: {id, account}
+//   const output = {
+//     success: false,
+//     error: "",
+//     data: {},
+//   };
+//   //沒找到jwt&id就顯示沒有權限並回傳資料
+//   if (!res.locals.jwt?.sid) {
+//     output.error = "沒有權限";
+//     return res.json(output);
+//   }
 
-  const [rows] = await db.query(
-    `
-  SELECT
-    coupon.\`hash\`,
-    coupon.\`discount_coins\`,
-    coupon.\`expiry_date\`,
-    coupon.\`coupon_status\`,
-    coupon.\`created_at\`
-  FROM
-    \`coupon\`
-  JOIN
-    \`coupon_use\` ON coupon.\`coupon_id\` = coupon_use.\`coupon_id\`
-  WHERE
-    coupon_use.\`sid\` = ?;
-`,
-    [res.locals.jwt.sid]
-  );
+//   const [rows] = await db.query(
+//     `
+//   SELECT
+//     coupon.\`hash\`,
+//     coupon.\`discount_coins\`,
+//     coupon.\`expiry_date\`,
+//     coupon.\`coupon_status\`,
+//     coupon.\`created_at\`
+//   FROM
+//     \`coupon\`
+//   JOIN
+//     \`coupon_use\` ON coupon.\`coupon_id\` = coupon_use.\`coupon_id\`
+//   WHERE
+//     coupon_use.\`sid\` = ?;
+// `,
+//     [res.locals.jwt.sid]
+//   );
 
-  if (!rows.length) {
-    output.error = "沒有這個會員";
-    //回傳資料
-    return res.json(output);
-  }
-  //正常取得資料的情形
-  output.success = true;
-  output.data = rows[0];
-  res.json(output);
-});
+//   if (!rows.length) {
+//     output.error = "沒有這個會員";
+//     //回傳資料
+//     return res.json(output);
+//   }
+//   //正常取得資料的情形
+//   output.success = true;
+//   output.data = rows[0];
+//   res.json(output);
+// });
 
-// 教學
-app.get("/register-all", async (req, res) => {
-  //res.locals.jwt: {id, account}
-  const output = {
-    success: false,
-    error: "",
-    data: {},
-  };
-  //沒找到jwt&id就顯示沒有權限並回傳資料
-  if (!res.locals.jwt?.sid) {
-    output.error = "沒有權限";
-    return res.json(output);
-  }
-  //取得會員自身資料(有可能沒拿到)
-  //因為sql語法``可能會有跳脫問題，所以外層用""包住
-  const [rows] = await db.query(
-    "SELECT `sid`, `lastname`, `firstname`, `birthday`, `mobile`, `account`,`password`,`zipcode`,`address`,`identification`,`email` FROM profile WHERE sid=?",
-    [res.locals.jwt.sid]
-  );
-  if (!rows.length) {
-    output.error = "沒有這個會員";
-    //回傳資料
-    return res.json(output);
-  }
-  //正常取得資料的情形
-  output.success = true;
-  output.data = rows[0]; //只有一筆
-  res.json(output);
-});
+// // 教學
+// app.get("/register-all", async (req, res) => {
+//   //res.locals.jwt: {id, account}
+//   const output = {
+//     success: false,
+//     error: "",
+//     data: {},
+//   };
+//   //沒找到jwt&id就顯示沒有權限並回傳資料
+//   if (!res.locals.jwt?.sid) {
+//     output.error = "沒有權限";
+//     return res.json(output);
+//   }
+//   //取得會員自身資料(有可能沒拿到)
+//   //因為sql語法``可能會有跳脫問題，所以外層用""包住
+//   const [rows] = await db.query(
+//     "SELECT `sid`, `lastname`, `firstname`, `birthday`, `mobile`, `account`,`password`,`zipcode`,`address`,`identification`,`email` FROM profile WHERE sid=?",
+//     [res.locals.jwt.sid]
+//   );
+//   if (!rows.length) {
+//     output.error = "沒有這個會員";
+//     //回傳資料
+//     return res.json(output);
+//   }
+//   //正常取得資料的情形
+//   output.success = true;
+//   output.data = rows[0]; //只有一筆
+//   res.json(output);
+// });
 
 // 設定靜態內容的資料夾 /根目錄
 app.use("/", express.static("public"));
