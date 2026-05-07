@@ -32,14 +32,14 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "http://127.0.0.1:5173"],
+    // origin: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
 app.use(logger("dev"));
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -48,7 +48,6 @@ app.use(express.static("public"));
 app.use("/bootstrap", express.static("node_modules/bootstrap/dist"));
 app.use("/jquery", express.static("node_modules/jquery/dist"));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -103,7 +102,6 @@ app.use((req, res, next) => {
 
 // 自訂頂層 middleware
 
-app.use(cors());
 app.use("/register-list", registerListRouter);
 app.use("/product", productRouter);
 app.use("/comments", commentsRouter);
