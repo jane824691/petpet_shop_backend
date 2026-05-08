@@ -32,9 +32,9 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "http://127.0.0.1:5173"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "https://petpet-shop-fronted-admin.zeabur.app", "http://127.0.0.1:5173", "http://localhost:5173"],
     // origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
@@ -158,6 +158,25 @@ app.post("/login-jwt", async (req, res) => {
     account: row.account,
   };
   res.json(output);
+});
+
+app.get("/auth/check", (req, res) => {
+  const user = req.session?.user;
+  if (!user?.sid) return res.status(401).json({ success: false, code: 401 });
+  return res.json({ success: true, code: 200, sid: user.sid, account: user.account });
+});
+
+app.post("/logout", (req, res) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  };
+
+  req.session?.destroy(() => {
+    res.clearCookie("sid", cookieOptions);
+    res.json({ success: true, code: 200 });
+  });
 });
 
 // 設定靜態內容的資料夾 /根目錄
