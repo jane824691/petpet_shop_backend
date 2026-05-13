@@ -68,7 +68,7 @@ app.use(
       // secure: process.env.NODE_ENV === "production", // https 才設 true
       secure: false, // https 才設 true
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 天
+      maxAge: 1000 * 60 * 60 * 24 * 3, // 3 天
     },
   })
 );

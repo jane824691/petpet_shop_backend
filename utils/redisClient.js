@@ -7,6 +7,12 @@ export const redisClient = createClient({
     // 故直接寫 127.0.0.1（IPv4）
 })
 
-redisClient.on('error', (err) => console.error('Redis Error', err))
+redisClient.on('connect', () => {
+    console.log('Redis connected')
+})
+
+redisClient.on('error', (err) => {
+    console.error('Redis Error', err)
+})
 
 await redisClient.connect()

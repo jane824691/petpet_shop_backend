@@ -9,24 +9,28 @@ class ProductController {
 
         const {
             categoryId,
-            productName,
-            productPrice,
+            nameZh,
+            nameEn,
+            price,
             stock,
-            productDescription,
-            productNameEn,
-            productDescriptionEn,
+            descriptionZh,
+            descriptionEn,
+            productImg,
+            images,
         } = req.body;
 
         try {
             const result = await productService.createProduct(
                 {
                     categoryId,
-                    productName,
-                    productPrice,
+                    nameZh,
+                    nameEn,
+                    price,
                     stock,
-                    productDescription,
-                    productNameEn,
-                    productDescriptionEn,
+                    descriptionZh,
+                    descriptionEn,
+                    productImg,
+                    images,
                 },
                 req.files
             );

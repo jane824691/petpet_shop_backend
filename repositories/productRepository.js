@@ -8,13 +8,13 @@ class ProductRepository {
 
     const params = [
       productData.categoryId,
-      productData.productName,
-      productData.productPrice,
+      productData.nameZh,
+      productData.price,
       productData.stock,
       productData.productImg,
-      productData.productDescription,
-      productData.productNameEn,
-      productData.productDescriptionEn,
+      productData.descriptionZh,
+      productData.nameEn,
+      productData.descriptionEn,
     ];
 
     const [result] = await db.query(sql, params);

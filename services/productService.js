@@ -3,6 +3,8 @@ import admin from "../utils/connect-firebase.js";
 import { v4 as uuidv4 } from "uuid";
 import productRepository from "../repositories/productRepository.js";
 
+tinify.key = process.env.TINYPNG_API_KEY;
+
 const bucket = admin.storage().bucket();
 
 class ProductService {
@@ -12,12 +14,12 @@ class ProductService {
       throw new Error("productImg 為必須");
     }
 
-    const photos = Array.isArray(files?.photos) ? files.photos : [];
-    if (photos.length > 3) {
+    const images = Array.isArray(files?.images) ? files.images : [];
+    if (images.length > 3) {
       throw new Error("最多 3 張多圖");
     }
 
-    return { productImgFile, photos };
+    return { productImgFile, images };
   }
 
   async uploadImage(file) {
@@ -47,14 +49,13 @@ class ProductService {
 
   async createProduct(productData, files) {
     // 建立商品主資料 + 多圖（依 sort_order 決定順序）
-    const { productImgFile, photos } = this.validateFiles(files);
-
+    const { productImgFile, images } = this.validateFiles(files);
     // productImg：商品主圖（只用第一張）
     const productImg = await this.uploadImage(productImgFile);
 
     const multipleImages = [];
-    for (let i = 0; i < photos.length; i++) {
-      const uploaded = await this.uploadImage(photos[i]);
+    for (let i = 0; i < images.length; i++) {
+      const uploaded = await this.uploadImage(images[i]);
       multipleImages.push({
         photo_path: uploaded.imgUrl,
         sort_order: i,

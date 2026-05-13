@@ -7,6 +7,8 @@ import tinify from "tinify";
 import admin from "./../utils/connect-firebase.js";
 import { v4 as uuidv4 } from "uuid";
 
+tinify.key = process.env.TINYPNG_API_KEY;
+
 // 首先要先建立 Storage 的 Bucket(儲存桶)
 const bucket = admin.storage().bucket();
 
@@ -34,7 +36,7 @@ const toProductListItemDTO = (product) => ({
   categoryId: product.category_id,
   nameZh: product.product_name,
   nameEn: product.product_name_en,
-  productPrice: product.product_price,
+  price: product.product_price,
   stock: product.stock,
   salesCondition: product.sales_condition,
   productImg: product.product_img,
@@ -437,7 +439,7 @@ import productController from "../controllers/productController.js";
 
 router.post('/add-v2', upload.fields([
   { name: 'productImg', maxCount: 1 },
-  { name: 'photos', maxCount: 3 },  // 非必須，數量上限視需求調整
+  { name: 'images', maxCount: 3 },  // 非必須，數量上限視需求調整
 ]), productController.createProduct.bind(productController));
 
 export default router;
