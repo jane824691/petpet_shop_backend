@@ -32,7 +32,7 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "https://petpet-shop-fronted-admin.zeabur.app", "http://127.0.0.1:5173", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "https://petpet-admin.zeabur.app", "http://127.0.0.1:5173", "http://localhost:5173"],
     // origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
