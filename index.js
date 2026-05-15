@@ -32,7 +32,7 @@ app.set("view engine", "pug");
 // top-level middlewares
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "https://petpet-admin.zeabur.app", "http://127.0.0.1:5173", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://localhost:9000", "https://petpet-shop-fronted.zeabur.app", "https://petpet-shop-admin.zeabur.app", "http://127.0.0.1:5173", "http://localhost:5173"],
     // origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
@@ -68,7 +68,7 @@ app.use(
       // secure: process.env.NODE_ENV === "production", // https 才設 true
       secure: false, // https 才設 true
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 3, // 3 天
+      maxAge: 1000 * 60 * 60 * 2, // 2 hours
     },
   })
 );
