@@ -442,4 +442,6 @@ router.post('/add-v2', upload.fields([
   { name: 'images', maxCount: 3 },  // 非必須，數量上限視需求調整
 ]), productController.createProduct.bind(productController));
 
+
+router.delete('/delete/:pid', productController.deleteProduct.bind(productController));
 export default router;

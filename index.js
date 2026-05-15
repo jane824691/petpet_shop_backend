@@ -112,7 +112,7 @@ app.use("/coupon-list/coupon-use", couponListUseRouter);
 app.use("/member", membercenterRouter);
 
 
-app.post("/login-jwt", async (req, res) => {
+app.post("/login", async (req, res) => {
   const output = {
     success: false,
     code: 0,

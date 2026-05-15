@@ -47,6 +47,21 @@ class ProductController {
             res.status(500).json(output);
         }
     }
+
+    async deleteProduct(req, res) { 
+        const pid = Number(req.params.pid);
+    
+            try {
+                await productService.deleteProduct(
+                    pid
+                );
+    
+                res.json({ success: true });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ success: false, message: err.message });
+            }
+    }
 }
 
 export default new ProductController();

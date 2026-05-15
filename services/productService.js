@@ -81,6 +81,13 @@ class ProductService {
       product_multiple_img: multipleImgResult,
     };
   }
-}
 
+  async deleteProduct(pid) {
+    if (!pid || pid < 205) {
+      throw new Error("No. 為必須, 目前只允許刪除No.204以後的商品");
+    }
+    const result = await productRepository.deleteProduct(pid);
+    return result;
+  }
+}
 export default new ProductService();

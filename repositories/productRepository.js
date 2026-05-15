@@ -37,6 +37,15 @@ class ProductRepository {
     const [result] = await db.query(sql, [rows]);
     return result;
   }
+
+  async deleteProduct(pid) {
+    const sql = `DELETE p, pm
+FROM product p
+LEFT JOIN product_multiple_img pm ON p.pid = pm.pid
+WHERE p.pid = ? AND p.pid >= 205;`;
+    const [result] = await db.query(sql, [pid]);
+    return result;
+  }
 }
 
 export default new ProductRepository();
