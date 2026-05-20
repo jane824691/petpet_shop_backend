@@ -6,6 +6,7 @@ import upload from "./../utils/upload-imgs.js";
 import tinify from "tinify";
 import admin from "./../utils/connect-firebase.js";
 import { v4 as uuidv4 } from "uuid";
+import productController from "../controllers/productController.js";
 
 tinify.key = process.env.TINYPNG_API_KEY;
 
@@ -67,15 +68,13 @@ const toProductDetailDTO = (rows) => {
   };
 };
 
-const getListData = async (req) => {
-  const perPage = 12; // 每頁幾筆
-  let page = +req.query.page || 1; // 用戶決定要看第幾頁
-  let searchWord =
+const buildProductListWhere = (req) => {
+  let qs = {}; // 用來把 query string 的設定傳給 template
+  const searchWord =
     req.query.searchWord && typeof req.query.searchWord === "string"
       ? req.query.searchWord.trim()
       : "";
 
-  let qs = {}; // 用來把 query string 的設定傳給 template
   let priceHigh = req.query.priceHigh ? req.query.priceHigh.trim() : ""; // 價錢區間高
   let priceLow = req.query.priceLow ? req.query.priceLow.trim() : ""; // 價錢區間低
   let sortBy = req.query.sortBy ? req.query.sortBy.trim() : ""; // 價格排序方式
@@ -113,6 +112,18 @@ const getListData = async (req) => {
     sortByClause = "ORDER BY product_price DESC";
   }
 
+  return { where, qs, sortByClause };
+};
+
+const getListData = async (req, onlyOnShelf = true) => {
+  const perPage = 12; // 每頁幾筆
+  let page = +req.query.page || 1; // 用戶決定要看第幾頁
+
+  let { where, qs, sortByClause } = buildProductListWhere(req);
+  if (onlyOnShelf) {
+    where += ` AND sales_condition='上架中'`;
+  }
+
   let totalRows = 0;
   let totalPages = 0;
   let rows = [];
@@ -148,14 +159,7 @@ const getListData = async (req) => {
     // 根據是否有價格排序來決定 SQL 查詢中的排序方式
     let priceSortClause = sortByClause ? sortByClause : "ORDER BY pid DESC";
 
-    // 商城前台不顯示'已下架'商品 
-    const baseCondition = `sales_condition <> '已下架'`;
-
-    const finalWhere = where
-      ? `${where} AND ${baseCondition}`
-      : `WHERE ${baseCondition}`;
-
-    const sql = `SELECT * FROM product ${finalWhere} ${priceSortClause} LIMIT ${(page - 1) * perPage}, ${perPage}
+    const sql = `SELECT * FROM product ${where} ${priceSortClause} LIMIT ${(page - 1) * perPage}, ${perPage}
 `;
     [rows] = await db.query(sql);
 
@@ -171,6 +175,7 @@ const getListData = async (req) => {
   return output;
 };
 
+// 排除 sales_condition='已下架'
 router.get("/api", async (req, res) => {
   res.json(await getListData(req));
   /*
@@ -180,6 +185,10 @@ router.get("/api", async (req, res) => {
     return res.json({success: false, error: "沒有授權, 不能取得資料"});
   }
   */
+});
+
+router.get("/api/all", async (req, res) => {
+  res.json(await getListData(req, false));
 });
 
 router.get("/one/:pid", async (req, res) => {
@@ -435,12 +444,18 @@ router.post('/add', upload.fields([
     res.json(output);
   })
 
-import productController from "../controllers/productController.js";
 
 router.post('/add-v2', upload.fields([
   { name: 'productImg', maxCount: 1 },
   { name: 'images', maxCount: 3 },  // 非必須，數量上限視需求調整
 ]), productController.createProduct.bind(productController));
+
+// 編輯商品：existingImages=Text(JSON 保留舊圖)，images=File(新圖)
+// 由於 form-data 裡 同一個 key images 不能同時放 Text 和 File，故不可共用 images 當 JSON
+router.put('/edit/:pid', upload.fields([
+  { name: 'productImg', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]), productController.updateProduct.bind(productController));
 
 
 router.delete('/delete/:pid', productController.deleteProduct.bind(productController));

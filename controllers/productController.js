@@ -48,6 +48,63 @@ class ProductController {
         }
     }
 
+    async updateProduct(req, res) {
+        const output = {
+            success: false,
+            postData: req.body,
+        };
+
+        const pid = Number(req.params.pid);
+        const {
+            categoryId,
+            nameZh,
+            nameEn,
+            price,
+            stock,
+            descriptionZh,
+            descriptionEn,
+            productImg,
+            existingImages,
+            images,
+        } = req.body;
+
+        try {
+            const result = await productService.updateProduct(
+                pid,
+                {
+                    categoryId,
+                    nameZh,
+                    nameEn,
+                    price,
+                    stock,
+                    descriptionZh,
+                    descriptionEn,
+                    productImg,
+                    existingImages:
+                        existingImages ??
+                        (typeof images === "string" ? images : undefined),
+                },
+                req.files,
+                {
+                    existingImagesProvided:
+                        req.body.existingImages !== undefined ||
+                        (typeof images === "string"),
+                }
+            );
+
+            output.success = true;
+            output.result = result;
+            res.json(output);
+        } catch (err) {
+            console.error(err);
+            output.exception = {
+                message: err.message,
+                stack: err.stack,
+            };
+            res.status(err.message === "商品不存在" ? 404 : 500).json(output);
+        }
+    }
+
     async deleteProduct(req, res) { 
         const pid = Number(req.params.pid);
     
