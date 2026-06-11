@@ -157,6 +157,7 @@ class ProductService {
     setIfDefined("nameEn", "product_name_en");
     setIfDefined("price", "product_price");
     setIfDefined("stock", "stock");
+    setIfDefined("salesCondition", "sales_condition");
     setIfDefined("descriptionZh", "product_description");
     setIfDefined("descriptionEn", "product_description_en");
 

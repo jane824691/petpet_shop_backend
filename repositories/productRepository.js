@@ -66,11 +66,11 @@ class ProductRepository {
       product_name_en: "product_name_en",
       product_price: "product_price",
       stock: "stock",
+      sales_condition: "sales_condition",
       product_img: "product_img",
       product_description: "product_description",
       product_description_en: "product_description_en",
     };
-
     const setParts = [];
     const params = [];
 
